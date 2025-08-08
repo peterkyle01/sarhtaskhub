@@ -119,6 +119,16 @@ export interface UserAuthOperations {
  */
 export interface User {
   id: number;
+  fullName: string;
+  /**
+   * Include country code, e.g. +1 555 123 4567
+   */
+  phone: string;
+  /**
+   * Determines access level within the system.
+   */
+  role: 'ADMIN' | 'WORKER';
+  profilePicture?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -219,6 +229,10 @@ export interface PayloadMigration {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
+  fullName?: T;
+  phone?: T;
+  role?: T;
+  profilePicture?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;

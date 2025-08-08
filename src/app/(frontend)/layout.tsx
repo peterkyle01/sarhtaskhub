@@ -9,7 +9,7 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Sarh Task Hub',
   description:
-    'Software and data company combining African cultural values with cutting-edge technology.',
+    'Comprehensive task management system designed to streamline operations for both workers and administrators. It features user authentication, role-based access control, and a user-friendly interface for efficient task management.',
   generator: 'v0.dev',
 }
 
@@ -18,14 +18,14 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={`${inter.className} min-h-screen bg-background text-foreground antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          <main className="">{children}</main>
+          <main className="min-h-screen">{children}</main>
         </ThemeProvider>
       </body>
     </html>
