@@ -7,7 +7,7 @@ import { ThemeProvider } from '@/components/custom/theme-provider'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'TundraTechies - Data. Harmony. Impact.',
+  title: 'Sarh Task Hub',
   description:
     'Software and data company combining African cultural values with cutting-edge technology.',
   generator: 'v0.dev',

@@ -55,28 +55,28 @@ import {
 const navigationItems = [
   {
     title: 'Dashboard',
-    url: '#',
+    url: '/',
     icon: Home,
     isActive: true,
   },
   {
     title: 'Clients',
-    url: '#',
+    url: '/clients',
     icon: Users,
   },
   {
     title: 'Workers',
-    url: '#',
+    url: '/workers',
     icon: UserCheck,
   },
   {
     title: 'Tasks',
-    url: '#',
+    url: '/tasks',
     icon: FileText,
   },
   {
     title: 'Reports',
-    url: '#',
+    url: '/reports',
     icon: BarChart3,
   },
 ]
@@ -296,7 +296,7 @@ export default function Dashboard() {
                 <CardDescription>Active vs inactive clients</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-[300px]">
+                <ChartContainer config={{}} className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -315,7 +315,7 @@ export default function Dashboard() {
                       <ChartTooltip content={<ChartTooltipContent />} />
                     </PieChart>
                   </ResponsiveContainer>
-                </div>
+                </ChartContainer>
                 <div className="flex justify-center gap-4 mt-4">
                   {clientDistribution.map((item) => (
                     <div key={item.name} className="flex items-center gap-2">
