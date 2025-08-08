@@ -160,23 +160,23 @@ export default function WorkerDashboard() {
   return (
     <div className="flex-1 space-y-6 p-6">
       {/* Welcome */}
-      <Card className="bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 text-white border-0 rounded-2xl shadow">
+      <Card className="bg-[var(--primary)] text-[var(--primary-foreground)] border-0 rounded-2xl shadow">
         <CardContent className="p-6 flex flex-col gap-4">
           <div>
             <h2 className="text-2xl font-bold mb-1">Welcome back, {workerData.name}! 👋</h2>
-            <p className="text-blue-100">
+            <p className="opacity-80">
               You have {todayTasks.filter((t) => t.status !== 'Completed').length} tasks to work on
               today.
             </p>
           </div>
           <div className="flex flex-wrap gap-4 text-sm">
-            <span className="flex items-center gap-1 text-green-50">
+            <span className="flex items-center gap-1 opacity-90">
               <CheckCircle className="h-4 w-4" /> {workerData.completedTasks} Completed
             </span>
-            <span className="flex items-center gap-1 text-amber-50">
+            <span className="flex items-center gap-1 opacity-90">
               <Clock className="h-4 w-4" /> {workerData.pendingTasks} Pending
             </span>
-            <span className="flex items-center gap-1 text-white">
+            <span className="flex items-center gap-1">
               <AlertCircle className="h-4 w-4" /> {completionRate}% Overall Progress
             </span>
           </div>
@@ -185,20 +185,18 @@ export default function WorkerDashboard() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Tasks List */}
-        <Card className="lg:col-span-2 rounded-2xl shadow-sm border-0 bg-white/80 dark:bg-slate-900/60 backdrop-blur-sm">
+        <Card className="lg:col-span-2 rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)]">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-lg text-gray-800 dark:text-gray-100">
-                  Today&apos;s Tasks
-                </CardTitle>
-                <CardDescription className="text-gray-600 dark:text-gray-400">
+                <CardTitle className="text-lg">Today&apos;s Tasks</CardTitle>
+                <CardDescription>
                   {todayCompletionRate}% completed (
                   {todayTasks.filter((t) => t.status === 'Completed').length} of {todayTasks.length}
                   )
                 </CardDescription>
               </div>
-              <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300 hover:bg-blue-100 rounded-full">
+              <Badge className="bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 rounded-full">
                 {todayTasks.length} tasks
               </Badge>
             </div>
@@ -209,37 +207,29 @@ export default function WorkerDashboard() {
               {todayTasks.map((task) => (
                 <Card
                   key={task.id}
-                  className={`border-l-4 ${getPriorityAccent(task.priority)} rounded-xl shadow-sm dark:bg-slate-800/60`}
+                  className={`border-l-4 ${getPriorityAccent(task.priority)} rounded-xl shadow-sm bg-[var(--card)]`}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm text-gray-800 dark:text-gray-100">
-                          {task.clientName}
-                        </span>
-                        <Badge
-                          variant="outline"
-                          className="rounded-full text-xs dark:border-slate-600 dark:text-slate-300"
-                        >
+                        <span className="font-medium text-sm">{task.clientName}</span>
+                        <Badge variant="outline" className="rounded-full text-xs">
                           {task.platform}
                         </Badge>
                       </div>
                       {getStatusBadge(task.status)}
                     </div>
-                    <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                    <div className="text-xs opacity-70 mb-2">
                       {task.courseName} - {task.taskType}
                     </div>
-                    <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center justify-between text-[11px] opacity-70">
                       <div className="flex items-center gap-3">
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" /> Due: {task.dueTime}
                         </span>
                         <span>Est: {task.estimatedTime}</span>
                       </div>
-                      <Badge
-                        variant="outline"
-                        className="rounded-full text-[10px] dark:border-slate-600 dark:text-slate-300"
-                      >
+                      <Badge variant="outline" className="rounded-full text-[10px]">
                         {task.priority} priority
                       </Badge>
                     </div>
@@ -251,12 +241,10 @@ export default function WorkerDashboard() {
         </Card>
 
         {/* Progress Chart */}
-        <Card className="rounded-2xl shadow-sm border-0 bg-white/80 dark:bg-slate-900/60 backdrop-blur-sm">
+        <Card className="rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)]">
           <CardHeader>
-            <CardTitle className="text-lg text-gray-800 dark:text-gray-100">Progress</CardTitle>
-            <CardDescription className="text-gray-600 dark:text-gray-400">
-              Completed vs Pending
-            </CardDescription>
+            <CardTitle className="text-lg">Progress</CardTitle>
+            <CardDescription>Completed vs Pending</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-center">
@@ -309,41 +297,35 @@ export default function WorkerDashboard() {
       </div>
 
       {/* Deadlines */}
-      <Card className="rounded-2xl shadow-sm border-0 bg-white/80 dark:bg-slate-900/60 backdrop-blur-sm">
+      <Card className="rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)]">
         <CardHeader>
-          <CardTitle className="text-lg text-gray-800 dark:text-gray-100 flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-amber-500" /> Upcoming Deadlines
+          <CardTitle className="text-lg flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-[var(--accent)]" /> Upcoming Deadlines
           </CardTitle>
-          <CardDescription className="text-gray-600 dark:text-gray-400">
-            Time-sensitive tasks
-          </CardDescription>
+          <CardDescription>Time-sensitive tasks</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 md:grid-cols-3">
             {upcomingDeadlines.map((d) => (
               <div
                 key={d.id}
-                className={`p-4 rounded-xl border-l-4 ${getPriorityAccent(d.priority)} flex flex-col gap-1 dark:bg-slate-800/60`}
+                className={`p-4 rounded-xl border-l-4 ${getPriorityAccent(d.priority)} flex flex-col gap-1 bg-[var(--card)]`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm text-gray-800 dark:text-gray-100 truncate">
-                    {d.clientName}
-                  </span>
+                  <span className="font-medium text-sm truncate">{d.clientName}</span>
                   <Badge
                     className={`rounded-full text-[10px] font-normal ${
                       d.hoursLeft < 24
-                        ? 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300'
+                        ? 'bg-red-100 text-red-700'
                         : d.hoursLeft < 48
-                          ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'
-                          : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
+                          ? 'bg-amber-100 text-amber-700'
+                          : 'bg-emerald-100 text-emerald-700'
                     }`}
                   >
                     {getTimeUntil(d.hoursLeft)}
                   </Badge>
                 </div>
-                <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
-                  {d.courseName}
-                </div>
+                <div className="text-xs opacity-70 truncate">{d.courseName}</div>
               </div>
             ))}
           </div>

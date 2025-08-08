@@ -1,7 +1,4 @@
 import React from 'react'
-import { cookies } from 'next/headers'
-import { getPayload } from 'payload'
-import payloadConfig from '@payload-config'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   Sidebar,
@@ -17,10 +14,13 @@ import {
   SidebarProvider,
   SidebarRail,
   SidebarTrigger,
+  SidebarFooter,
 } from '@/components/ui/sidebar'
 import { Home, Users, Upload, FileText } from 'lucide-react'
 import type { Config } from '@/payload-types'
 import { ThemeToggle } from '@/components/custom/theme-toggle'
+import { LogoutButton } from './logout-button'
+import { getCurrentUser } from '@/server-actions/user-actions'
 
 // Replace extended interface with direct alias to generated type
 // type BaseUser = Config['user']
@@ -29,91 +29,13 @@ import { ThemeToggle } from '@/components/custom/theme-toggle'
 // so we just alias it.
 type AppUser = Config['user']
 
-const COOKIE_NAME = 'payload-token'
-
 const navigationItems = [
   { title: 'Dashboard', url: '/worker-dashboard', icon: Home },
   { title: 'Assigned Clients', url: '/worker-clients', icon: Users },
   { title: 'Submit Task', url: '/submit-task', icon: Upload },
 ]
 
-async function fetchCurrentUser(): Promise<AppUser | null> {
-  try {
-    const cookieStore = await cookies()
-    const token = cookieStore.get(COOKIE_NAME)?.value
-    if (!token) return null
-    const payload = await getPayload({ config: payloadConfig })
-    // payload.auth with token argument (internal helper not documented fully) fallback to me route
-    const me = await payload.find({
-      collection: 'users',
-      where: { id: { exists: true } },
-      limit: 1,
-    })
-    // NOTE: Without a direct token verify helper exposed here, replace with real endpoint logic later.
-    return (me.docs?.[0] as AppUser) || null
-  } catch {
-    return null
-  }
-}
-
-function WorkerSidebar() {
-  return (
-    <Sidebar className="border-r bg-white dark:bg-slate-900 transition-colors">
-      <SidebarHeader>
-        <div className="flex items-center justify-between gap-2 px-4 py-3">
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-sm">
-              <FileText className="h-4 w-4" />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-semibold text-sm tracking-tight text-slate-800 dark:text-slate-100">
-                Sarh Task Hub
-              </span>
-              <span className="text-[10px] uppercase text-muted-foreground font-medium">
-                Worker
-              </span>
-            </div>
-          </div>
-          <ThemeToggle />
-        </div>
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-[11px] font-semibold tracking-wide text-muted-foreground/80">
-            Navigation
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navigationItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    className="rounded-md transition-colors hover:bg-blue-50 dark:hover:bg-blue-500/10 data-[active=true]:bg-blue-100 dark:data-[active=true]:bg-blue-500/20"
-                  >
-                    <a
-                      href={item.url}
-                      className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200"
-                    >
-                      <item.icon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                      <span>{item.title}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-      <div className="mt-auto px-4 py-4 border-t border-border/50 text-[11px] text-muted-foreground/70">
-        <p className="font-mono">v1.0.0</p>
-      </div>
-      <SidebarRail />
-    </Sidebar>
-  )
-}
-
-export default async function WorkerDashboardLayout({ children }: { children: React.ReactNode }) {
-  const user = await fetchCurrentUser()
+function WorkerSidebar({ user }: { user: AppUser | null }) {
   const displayName = user?.fullName || user?.email || 'Worker'
   const avatarURL = (() => {
     const pic = user?.profilePicture
@@ -124,29 +46,113 @@ export default async function WorkerDashboardLayout({ children }: { children: Re
   })()
 
   return (
-    <SidebarProvider>
-      <WorkerSidebar />
-      <SidebarInset className="bg-slate-50 dark:bg-slate-950 transition-colors min-h-screen">
-        <header className="flex h-16 shrink-0 items-center justify-between border-b bg-white dark:bg-slate-900 border-border dark:border-slate-800 px-6 transition-colors">
-          <div className="flex items-center gap-2">
-            <SidebarTrigger className="-ml-1" />
-            <div className="h-4 w-px bg-border" />
-            <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Dashboard</h1>
-          </div>
+    <Sidebar className="border-r border-border/40 bg-card/50 backdrop-blur-xl text-[var(--sidebar-foreground)] transition-all duration-300 shadow-lg">
+      <SidebarHeader className="border-b border-border/20">
+        <div className="flex items-center justify-between gap-3 px-6 py-4">
           <div className="flex items-center gap-3">
-            <Avatar className="h-9 w-9">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg">
+              <FileText className="h-5 w-5" />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-bold text-base tracking-tight text-foreground">
+                Sarh Task Hub
+              </span>
+              <span className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wider bg-secondary/50 px-2 py-0.5 rounded-full">
+                Worker Panel
+              </span>
+            </div>
+          </div>
+          <ThemeToggle />
+        </div>
+      </SidebarHeader>
+
+      <SidebarContent className="px-3 py-4">
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-xs font-bold tracking-wide text-muted-foreground/90 uppercase mb-3 px-3">
+            Navigation
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu className="space-y-1">
+              {navigationItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    className="rounded-xl transition-all duration-200 hover:bg-accent/80 hover:shadow-md data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:shadow-md data-[active=true]:border-primary/20 focus-visible:ring-2 focus-visible:ring-primary/50 group"
+                  >
+                    <a
+                      href={item.url}
+                      className="flex items-center gap-3 text-sm font-medium px-3 py-3 text-foreground/80 hover:text-foreground transition-colors"
+                    >
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 group-hover:bg-accent group-data-[active=true]:bg-primary/20 transition-colors">
+                        <item.icon className="h-4 w-4" />
+                      </div>
+                      <span className="font-medium">{item.title}</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter className="border-t border-border/20 bg-card/30 backdrop-blur-sm">
+        <div className="p-4 space-y-4">
+          {/* User Profile Section */}
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-background/50 border border-border/20 shadow-sm hover:shadow-md transition-all duration-200">
+            <Avatar className="h-10 w-10 ring-2 ring-background shadow-md">
               <AvatarImage src={avatarURL} alt={displayName} />
-              <AvatarFallback>
+              <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-primary/20 to-secondary/20 text-foreground">
                 {displayName
                   .split(' ')
                   .map((n: string) => n[0])
-                  .join('')}
+                  .join('')
+                  .toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <div className="text-sm">
-              <div className="font-medium text-gray-800 leading-tight">{displayName}</div>
-              <div className="text-gray-500 text-xs">{user?.role || 'WORKER'}</div>
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-sm text-foreground truncate">{displayName}</div>
+              <div className="flex items-center gap-1">
+                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span className="text-xs text-muted-foreground font-medium">
+                  {user?.role || 'WORKER'}
+                </span>
+              </div>
             </div>
+          </div>
+
+          {/* Logout Button */}
+          <LogoutButton />
+
+          {/* Version Info */}
+          <div className="pt-2 border-t border-border/10">
+            <div className="flex items-center justify-between text-[10px] text-muted-foreground/60">
+              <span className="font-mono font-medium">v1.0.0</span>
+              <div className="flex items-center gap-1">
+                <div className="h-1.5 w-1.5 rounded-full bg-green-500"></div>
+                <span className="uppercase tracking-wide font-semibold">Online</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </SidebarFooter>
+      <SidebarRail />
+    </Sidebar>
+  )
+}
+
+export default async function WorkerDashboardLayout({ children }: { children: React.ReactNode }) {
+  const user = await getCurrentUser()
+
+  return (
+    <SidebarProvider>
+      <WorkerSidebar user={user} />
+      <SidebarInset className="bg-[var(--background)] transition-colors min-h-screen">
+        <header className="flex h-16 shrink-0 items-center justify-between border-b bg-[var(--card)] border-[var(--border)] px-6 transition-colors">
+          <div className="flex items-center gap-2">
+            <SidebarTrigger className="-ml-1" />
+            <div className="h-4 w-px bg-[var(--border)]" />
+            <h1 className="text-lg font-semibold">Dashboard</h1>
           </div>
         </header>
         {children}
