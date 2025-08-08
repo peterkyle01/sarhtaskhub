@@ -71,9 +71,8 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="flex-1 space-y-6 p-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold dark:text-gray-100">Dashboard</h1>
+        <h1 className="text-lg font-semibold">Dashboard</h1>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="icon" className="relative">
@@ -109,10 +108,8 @@ export default function AdminDashboardPage() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-
-      {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="dark:bg-slate-900/60">
+        <Card className="bg-[var(--card)] border border-[var(--border)]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
@@ -122,7 +119,7 @@ export default function AdminDashboardPage() {
             <p className="text-xs text-muted-foreground">+12% from last month</p>
           </CardContent>
         </Card>
-        <Card className="dark:bg-slate-900/60">
+        <Card className="bg-[var(--card)] border border-[var(--border)]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending Tasks</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
@@ -132,7 +129,7 @@ export default function AdminDashboardPage() {
             <p className="text-xs text-muted-foreground">-5% from yesterday</p>
           </CardContent>
         </Card>
-        <Card className="dark:bg-slate-900/60">
+        <Card className="bg-[var(--card)] border border-[var(--border)]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Completed Tasks</CardTitle>
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
@@ -142,7 +139,7 @@ export default function AdminDashboardPage() {
             <p className="text-xs text-muted-foreground">+18% from yesterday</p>
           </CardContent>
         </Card>
-        <Card className="dark:bg-slate-900/60">
+        <Card className="bg-[var(--card)] border border-[var(--border)]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Deadlines This Week</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -153,10 +150,8 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Charts Section */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="col-span-2 dark:bg-slate-900/60">
+        <Card className="col-span-2 bg-[var(--card)] border border-[var(--border)]">
           <CardHeader>
             <CardTitle>Task Completion Overview</CardTitle>
             <CardDescription>Daily task completion vs pending tasks this week</CardDescription>
@@ -175,8 +170,7 @@ export default function AdminDashboardPage() {
             </ChartContainer>
           </CardContent>
         </Card>
-
-        <Card className="dark:bg-slate-900/60">
+        <Card className="bg-[var(--card)] border border-[var(--border)]">
           <CardHeader>
             <CardTitle>Client Distribution</CardTitle>
             <CardDescription>Active vs inactive clients</CardDescription>
@@ -215,9 +209,7 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Recent Activity */}
-      <Card className="dark:bg-slate-900/60">
+      <Card className="bg-[var(--card)] border border-[var(--border)]">
         <CardHeader>
           <CardTitle>Recent Activity</CardTitle>
           <CardDescription>Latest updates from your task hub</CardDescription>

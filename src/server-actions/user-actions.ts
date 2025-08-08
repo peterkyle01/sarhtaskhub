@@ -47,3 +47,30 @@ export async function logout(): Promise<{ success: boolean }> {
     return { success: false }
   }
 }
+
+export async function getCurrentUser(): Promise<GeneratedTypes['user'] | null> {
+  try {
+    const cookieStore = await cookies()
+    const token = cookieStore.get(COOKIE_NAME)?.value
+    if (!token) return null
+
+    const payload = await getPayload({ config: payloadConfig })
+
+    // Try to decode the JWT token to get user ID
+    const decoded = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString())
+    const userId = decoded.id || decoded.user?.id || decoded.sub
+
+    if (!userId) return null
+
+    // Fetch the user by ID
+    const user = await payload.findByID({
+      collection: 'users',
+      id: userId,
+    })
+
+    return (user as GeneratedTypes['user']) || null
+  } catch (error) {
+    console.error('Failed to get current user:', error)
+    return null
+  }
+}
