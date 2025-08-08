@@ -1,19 +1,19 @@
-"use client"
+'use client'
 
 import { useState } from 'react'
-import { Home, Users, Upload, FileText, Clock, CheckCircle, User } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+import { Home, Users, Upload, FileText } from 'lucide-react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from '@/components/ui/select'
 import {
   Sidebar,
   SidebarContent,
@@ -28,26 +28,27 @@ import {
   SidebarProvider,
   SidebarRail,
   SidebarTrigger,
-} from "@/components/ui/sidebar"
+} from '@/components/ui/sidebar'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { cn } from '@/lib/utils' // Assuming cn utility is available
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 const navigationItems = [
   {
-    title: "Dashboard",
-    url: "/worker-dashboard",
+    title: 'Dashboard',
+    url: '/worker-dashboard',
     icon: Home,
   },
   {
-    title: "Assigned Clients",
-    url: "/worker-clients",
+    title: 'Assigned Clients',
+    url: '/worker-clients',
     icon: Users,
   },
   {
-    title: "Submit Task",
-    url: "/submit-task",
+    title: 'Submit Task',
+    url: '/submit-task',
     icon: Upload,
     isActive: true,
   },
@@ -55,38 +56,72 @@ const navigationItems = [
 
 // Mock tasks assigned to the worker
 const mockAssignedTasks = [
-  { id: "TSK001", clientName: "John Smith", courseName: "Calculus I", taskType: "Quiz", status: "In Progress" },
-  { id: "TSK004", clientName: "Sarah Davis", courseName: "Algebra", taskType: "Assignment", status: "Pending" },
-  { id: "TSK007", clientName: "Mike Johnson", courseName: "Statistics", taskType: "Quiz", status: "Pending" },
-  { id: "TSK009", clientName: "Emma Brown", courseName: "Physics II", taskType: "Course", status: "In Progress" },
+  {
+    id: 'TSK001',
+    clientName: 'John Smith',
+    courseName: 'Calculus I',
+    taskType: 'Quiz',
+    status: 'In Progress',
+  },
+  {
+    id: 'TSK004',
+    clientName: 'Sarah Davis',
+    courseName: 'Algebra',
+    taskType: 'Assignment',
+    status: 'Pending',
+  },
+  {
+    id: 'TSK007',
+    clientName: 'Mike Johnson',
+    courseName: 'Statistics',
+    taskType: 'Quiz',
+    status: 'Pending',
+  },
+  {
+    id: 'TSK009',
+    clientName: 'Emma Brown',
+    courseName: 'Physics II',
+    taskType: 'Course',
+    status: 'In Progress',
+  },
 ]
 
 const workerData = {
-  name: "Sarah Wilson",
-  avatar: "/placeholder.svg?height=40&width=40",
-  role: "Senior Academic Assistant",
+  name: 'Sarah Wilson',
+  avatar: '/placeholder.svg?height=40&width=40',
+  role: 'Senior Academic Assistant',
 }
 
-const formSchema = z.object({
-  taskId: z.string().min(1, { message: "Please select a task." }),
-  status: z.enum(["In Progress", "Completed"], { message: "Please select a status." }),
-  notes: z.string().optional(),
-  score: z.union([
-    z.literal(""), // Allow empty string for optional score
-    z.string().regex(/^\d+$/, { message: "Score must be a number." }).transform(Number).refine(val => val >= 0 && val <= 100, { message: "Score must be between 0 and 100." })
-  ]).optional(),
-  file: z.any().optional(), // FileList or File object
-}).superRefine((data, ctx) => {
-  if (data.status === "Completed" && (data.score === undefined || data.score === "")) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Score is required for completed tasks.",
-      path: ['score'],
-    });
-  }
-});
+const formSchema = z
+  .object({
+    taskId: z.string().min(1, { message: 'Please select a task.' }),
+    status: z.enum(['In Progress', 'Completed'], { message: 'Please select a status.' }),
+    notes: z.string().optional(),
+    score: z.string().optional(),
+    file: z.any().optional(), // FileList or File object
+  })
+  .superRefine((data, ctx) => {
+    if (data.status === 'Completed') {
+      if (!data.score || data.score.trim() === '') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Score is required for completed tasks.',
+          path: ['score'],
+        })
+      } else {
+        const scoreNum = Number(data.score)
+        if (isNaN(scoreNum) || scoreNum < 0 || scoreNum > 100) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Score must be a number between 0 and 100.',
+            path: ['score'],
+          })
+        }
+      }
+    }
+  })
 
-type SubmissionFormValues = z.infer<typeof formSchema>;
+type SubmissionFormValues = z.infer<typeof formSchema>
 
 function WorkerSidebar() {
   return (
@@ -127,30 +162,36 @@ function WorkerSidebar() {
 }
 
 export default function SubmitTaskPage() {
-  const [submissionSuccess, setSubmissionSuccess] = useState(false);
+  const [submissionSuccess, setSubmissionSuccess] = useState(false)
 
   const form = useForm<SubmissionFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      taskId: "",
-      status: "In Progress",
-      notes: "",
-      score: "",
+      taskId: '',
+      status: 'In Progress',
+      notes: '',
+      score: '',
       file: undefined,
     },
-  });
+  })
 
-  const { register, handleSubmit, watch, formState: { errors, isSubmitting }, reset } = form;
-  const selectedStatus = watch("status");
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+    reset,
+  } = form
+  const selectedStatus = watch('status')
 
   const onSubmit = async (data: SubmissionFormValues) => {
-    console.log("Form data submitted:", data);
+    console.log('Form data submitted:', data)
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setSubmissionSuccess(true);
-    reset(); // Reset form after successful submission
-    setTimeout(() => setSubmissionSuccess(false), 5000); // Hide success message after 5 seconds
-  };
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+    setSubmissionSuccess(true)
+    reset() // Reset form after successful submission
+    setTimeout(() => setSubmissionSuccess(false), 5000) // Hide success message after 5 seconds
+  }
 
   return (
     <SidebarProvider>
@@ -164,8 +205,13 @@ export default function SubmitTaskPage() {
           </div>
           <div className="flex items-center gap-3">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={workerData.avatar || "/placeholder.svg"} alt={workerData.name} />
-              <AvatarFallback>{workerData.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+              <AvatarImage src={workerData.avatar || '/placeholder.svg'} alt={workerData.name} />
+              <AvatarFallback>
+                {workerData.name
+                  .split(' ')
+                  .map((n) => n[0])
+                  .join('')}
+              </AvatarFallback>
             </Avatar>
             <div className="text-sm">
               <div className="font-medium text-gray-800">{workerData.name}</div>
@@ -193,10 +239,15 @@ export default function SubmitTaskPage() {
                 <div className="grid gap-2">
                   <Label htmlFor="taskId">Select Task</Label>
                   <Select
-                    onValueChange={(value) => form.setValue("taskId", value)}
-                    value={form.watch("taskId")}
+                    onValueChange={(value) => form.setValue('taskId', value)}
+                    value={form.watch('taskId')}
                   >
-                    <SelectTrigger className={cn("rounded-xl border-gray-200", errors.taskId && "border-red-500")}>
+                    <SelectTrigger
+                      className={cn(
+                        'rounded-xl border-gray-200',
+                        errors.taskId && 'border-red-500',
+                      )}
+                    >
                       <SelectValue placeholder="Choose a task to update" />
                     </SelectTrigger>
                     <SelectContent>
@@ -207,17 +258,30 @@ export default function SubmitTaskPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  {errors.taskId && <p className="text-red-500 text-xs mt-1">{errors.taskId.message}</p>}
+                  {errors.taskId && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {typeof errors.taskId.message === 'string'
+                        ? errors.taskId.message
+                        : 'Please select a task'}
+                    </p>
+                  )}
                 </div>
 
                 {/* Status Selector */}
                 <div className="grid gap-2">
                   <Label htmlFor="status">Status</Label>
                   <Select
-                    onValueChange={(value: "In Progress" | "Completed") => form.setValue("status", value)}
-                    value={form.watch("status")}
+                    onValueChange={(value: 'In Progress' | 'Completed') =>
+                      form.setValue('status', value)
+                    }
+                    value={form.watch('status')}
                   >
-                    <SelectTrigger className={cn("rounded-xl border-gray-200", errors.status && "border-red-500")}>
+                    <SelectTrigger
+                      className={cn(
+                        'rounded-xl border-gray-200',
+                        errors.status && 'border-red-500',
+                      )}
+                    >
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -225,7 +289,13 @@ export default function SubmitTaskPage() {
                       <SelectItem value="Completed">Completed</SelectItem>
                     </SelectContent>
                   </Select>
-                  {errors.status && <p className="text-red-500 text-xs mt-1">{errors.status.message}</p>}
+                  {errors.status && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {typeof errors.status.message === 'string'
+                        ? errors.status.message
+                        : 'Please select a status'}
+                    </p>
+                  )}
                 </div>
 
                 {/* Notes Textarea */}
@@ -234,24 +304,36 @@ export default function SubmitTaskPage() {
                   <Textarea
                     id="notes"
                     placeholder="Add any relevant notes or updates..."
-                    className={cn("rounded-xl border-gray-200", errors.notes && "border-red-500")}
-                    {...register("notes")}
+                    className={cn('rounded-xl border-gray-200', errors.notes && 'border-red-500')}
+                    {...register('notes')}
                   />
-                  {errors.notes && <p className="text-red-500 text-xs mt-1">{errors.notes.message}</p>}
+                  {errors.notes && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {typeof errors.notes.message === 'string'
+                        ? errors.notes.message
+                        : 'Invalid notes'}
+                    </p>
+                  )}
                 </div>
 
                 {/* Optional Score Input (conditional) */}
-                {selectedStatus === "Completed" && (
+                {selectedStatus === 'Completed' && (
                   <div className="grid gap-2">
                     <Label htmlFor="score">Score (0-100)</Label>
                     <Input
                       id="score"
                       type="number"
                       placeholder="Enter score"
-                      className={cn("rounded-xl border-gray-200", errors.score && "border-red-500")}
-                      {...register("score")}
+                      className={cn('rounded-xl border-gray-200', errors.score && 'border-red-500')}
+                      {...register('score')}
                     />
-                    {errors.score && <p className="text-red-500 text-xs mt-1">{errors.score.message}</p>}
+                    {errors.score && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {typeof errors.score.message === 'string'
+                          ? errors.score.message
+                          : 'Invalid score'}
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -261,10 +343,19 @@ export default function SubmitTaskPage() {
                   <Input
                     id="file"
                     type="file"
-                    className={cn("rounded-xl border-gray-200 file:text-blue-600 file:font-medium", errors.file && "border-red-500")}
-                    {...register("file")}
+                    className={cn(
+                      'rounded-xl border-gray-200 file:text-blue-600 file:font-medium',
+                      errors.file && 'border-red-500',
+                    )}
+                    {...register('file')}
                   />
-                  {errors.file && <p className="text-red-500 text-xs mt-1">{errors.file.message}</p>}
+                  {errors.file && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {typeof errors.file.message === 'string'
+                        ? errors.file.message
+                        : 'Invalid file'}
+                    </p>
+                  )}
                 </div>
 
                 {/* Submit Button */}
