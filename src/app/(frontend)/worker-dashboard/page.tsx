@@ -1,12 +1,23 @@
-"use client"
+'use client'
 
 import { useState } from 'react'
-import { Home, Users, Upload, Clock, CheckCircle, AlertCircle, Calendar, FileText, TrendingUp, User } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  Home,
+  Users,
+  Upload,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Calendar,
+  FileText,
+  TrendingUp,
+  User,
+} from 'lucide-react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   Sidebar,
   SidebarContent,
@@ -21,132 +32,132 @@ import {
   SidebarProvider,
   SidebarRail,
   SidebarTrigger,
-} from "@/components/ui/sidebar"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis } from "recharts"
+} from '@/components/ui/sidebar'
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis } from 'recharts'
 
 const navigationItems = [
   {
-    title: "Dashboard",
-    url: "/worker-dashboard",
+    title: 'Dashboard',
+    url: '/worker-dashboard',
     icon: Home,
     isActive: true,
   },
   {
-    title: "Assigned Clients",
-    url: "/worker-clients",
+    title: 'Assigned Clients',
+    url: '/worker-clients',
     icon: Users,
   },
   {
-    title: "Submit Task",
-    url: "/submit-task",
+    title: 'Submit Task',
+    url: '/submit-task',
     icon: Upload,
   },
 ]
 
 // Mock worker data
 const workerData = {
-  name: "Sarah Wilson",
-  avatar: "/placeholder.svg?height=40&width=40",
-  role: "Senior Academic Assistant",
+  name: 'Sarah Wilson',
+  avatar: '/placeholder.svg?height=40&width=40',
+  role: 'Senior Academic Assistant',
   totalTasks: 15,
   completedTasks: 8,
   pendingTasks: 7,
   todayTasks: 4,
   weeklyGoal: 12,
-  performanceScore: 92
+  performanceScore: 92,
 }
 
 // Mock today's tasks
 const todayTasks = [
   {
-    id: "TSK001",
-    clientName: "John Smith",
-    courseName: "Calculus I",
-    taskType: "Quiz",
-    platform: "Cengage",
-    dueTime: "2:00 PM",
-    status: "In Progress",
-    priority: "high",
-    estimatedTime: "45 min"
+    id: 'TSK001',
+    clientName: 'John Smith',
+    courseName: 'Calculus I',
+    taskType: 'Quiz',
+    platform: 'Cengage',
+    dueTime: '2:00 PM',
+    status: 'In Progress',
+    priority: 'high',
+    estimatedTime: '45 min',
   },
   {
-    id: "TSK004",
-    clientName: "Sarah Davis",
-    courseName: "Algebra",
-    taskType: "Assignment",
-    platform: "ALEKS",
-    dueTime: "4:30 PM",
-    status: "Pending",
-    priority: "medium",
-    estimatedTime: "1.5 hours"
+    id: 'TSK004',
+    clientName: 'Sarah Davis',
+    courseName: 'Algebra',
+    taskType: 'Assignment',
+    platform: 'ALEKS',
+    dueTime: '4:30 PM',
+    status: 'Pending',
+    priority: 'medium',
+    estimatedTime: '1.5 hours',
   },
   {
-    id: "TSK007",
-    clientName: "Mike Johnson",
-    courseName: "Statistics",
-    taskType: "Quiz",
-    platform: "ALEKS",
-    dueTime: "6:00 PM",
-    status: "Pending",
-    priority: "low",
-    estimatedTime: "30 min"
+    id: 'TSK007',
+    clientName: 'Mike Johnson',
+    courseName: 'Statistics',
+    taskType: 'Quiz',
+    platform: 'ALEKS',
+    dueTime: '6:00 PM',
+    status: 'Pending',
+    priority: 'low',
+    estimatedTime: '30 min',
   },
   {
-    id: "TSK009",
-    clientName: "Emma Brown",
-    courseName: "Physics II",
-    taskType: "Course",
-    platform: "Cengage",
-    dueTime: "11:59 PM",
-    status: "Completed",
-    priority: "medium",
-    estimatedTime: "2 hours"
-  }
+    id: 'TSK009',
+    clientName: 'Emma Brown',
+    courseName: 'Physics II',
+    taskType: 'Course',
+    platform: 'Cengage',
+    dueTime: '11:59 PM',
+    status: 'Completed',
+    priority: 'medium',
+    estimatedTime: '2 hours',
+  },
 ]
 
 // Mock upcoming deadlines
 const upcomingDeadlines = [
   {
-    id: "TSK010",
-    clientName: "Alex Thompson",
-    courseName: "Chemistry",
-    dueDate: "2024-02-08",
+    id: 'TSK010',
+    clientName: 'Alex Thompson',
+    courseName: 'Chemistry',
+    dueDate: '2024-02-08',
     hoursLeft: 18,
-    priority: "high"
+    priority: 'high',
   },
   {
-    id: "TSK011", 
-    clientName: "Lisa Rodriguez",
-    courseName: "Biology",
-    dueDate: "2024-02-09",
+    id: 'TSK011',
+    clientName: 'Lisa Rodriguez',
+    courseName: 'Biology',
+    dueDate: '2024-02-09',
     hoursLeft: 42,
-    priority: "medium"
+    priority: 'medium',
   },
   {
-    id: "TSK012",
-    clientName: "David Wilson",
-    courseName: "Geometry",
-    dueDate: "2024-02-10",
+    id: 'TSK012',
+    clientName: 'David Wilson',
+    courseName: 'Geometry',
+    dueDate: '2024-02-10',
     hoursLeft: 66,
-    priority: "low"
-  }
+    priority: 'low',
+  },
 ]
 
 // Chart data
 const progressData = [
-  { name: "Completed", value: workerData.completedTasks, color: "#10b981" },
-  { name: "Pending", value: workerData.pendingTasks, color: "#f59e0b" },
+  { name: 'Completed', value: workerData.completedTasks, color: '#10b981' },
+  { name: 'Pending', value: workerData.pendingTasks, color: '#f59e0b' },
 ]
 
 const weeklyProgressData = [
-  { day: "Mon", completed: 2, target: 2 },
-  { day: "Tue", completed: 1, target: 2 },
-  { day: "Wed", completed: 3, target: 2 },
-  { day: "Thu", completed: 2, target: 2 },
-  { day: "Fri", completed: 0, target: 2 },
-  { day: "Sat", completed: 0, target: 1 },
-  { day: "Sun", completed: 0, target: 1 },
+  { day: 'Mon', completed: 2, target: 2 },
+  { day: 'Tue', completed: 1, target: 2 },
+  { day: 'Wed', completed: 3, target: 2 },
+  { day: 'Thu', completed: 2, target: 2 },
+  { day: 'Fri', completed: 0, target: 2 },
+  { day: 'Sat', completed: 0, target: 1 },
+  { day: 'Sun', completed: 0, target: 1 },
 ]
 
 function WorkerSidebar() {
@@ -189,29 +200,55 @@ function WorkerSidebar() {
 
 function getStatusBadge(status: string) {
   switch (status) {
-    case "Completed":
-      return <Badge className="bg-green-100 text-green-700 hover:bg-green-100 rounded-full">Completed</Badge>
-    case "In Progress":
-      return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 rounded-full">In Progress</Badge>
-    case "Pending":
-      return <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100 rounded-full">Pending</Badge>
+    case 'Completed':
+      return (
+        <Badge className="bg-green-100 text-green-700 hover:bg-green-100 rounded-full">
+          Completed
+        </Badge>
+      )
+    case 'In Progress':
+      return (
+        <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 rounded-full">
+          In Progress
+        </Badge>
+      )
+    case 'Pending':
+      return (
+        <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100 rounded-full">
+          Pending
+        </Badge>
+      )
     default:
-      return <Badge variant="secondary" className="rounded-full">{status}</Badge>
+      return (
+        <Badge variant="secondary" className="rounded-full">
+          {status}
+        </Badge>
+      )
   }
 }
 
 function getPlatformBadge(platform: string) {
-  return platform === "Cengage" 
-    ? <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 rounded-full text-xs">Cengage</Badge>
-    : <Badge className="bg-indigo-100 text-indigo-700 hover:bg-indigo-100 rounded-full text-xs">ALEKS</Badge>
+  return platform === 'Cengage' ? (
+    <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 rounded-full text-xs">
+      Cengage
+    </Badge>
+  ) : (
+    <Badge className="bg-indigo-100 text-indigo-700 hover:bg-indigo-100 rounded-full text-xs">
+      ALEKS
+    </Badge>
+  )
 }
 
 function getPriorityColor(priority: string) {
   switch (priority) {
-    case "high": return "border-l-red-400 bg-red-50"
-    case "medium": return "border-l-yellow-400 bg-yellow-50"
-    case "low": return "border-l-green-400 bg-green-50"
-    default: return "border-l-gray-400 bg-gray-50"
+    case 'high':
+      return 'border-l-red-400 bg-red-50'
+    case 'medium':
+      return 'border-l-yellow-400 bg-yellow-50'
+    case 'low':
+      return 'border-l-green-400 bg-green-50'
+    default:
+      return 'border-l-gray-400 bg-gray-50'
   }
 }
 
@@ -226,7 +263,9 @@ function getTimeUntilDeadline(hoursLeft: number) {
 
 export default function WorkerDashboard() {
   const completionRate = Math.round((workerData.completedTasks / workerData.totalTasks) * 100)
-  const todayCompletionRate = Math.round((todayTasks.filter(t => t.status === "Completed").length / todayTasks.length) * 100)
+  const todayCompletionRate = Math.round(
+    (todayTasks.filter((t) => t.status === 'Completed').length / todayTasks.length) * 100,
+  )
 
   return (
     <SidebarProvider>
@@ -240,8 +279,13 @@ export default function WorkerDashboard() {
           </div>
           <div className="flex items-center gap-3">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={workerData.avatar || "/placeholder.svg"} alt={workerData.name} />
-              <AvatarFallback>{workerData.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+              <AvatarImage src={workerData.avatar || '/placeholder.svg'} alt={workerData.name} />
+              <AvatarFallback>
+                {workerData.name
+                  .split(' ')
+                  .map((n) => n[0])
+                  .join('')}
+              </AvatarFallback>
             </Avatar>
             <div className="text-sm">
               <div className="font-medium text-gray-800">{workerData.name}</div>
@@ -257,7 +301,10 @@ export default function WorkerDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-bold mb-2">Welcome back, {workerData.name}! 👋</h2>
-                  <p className="text-blue-100 mb-4">You have {todayTasks.filter(t => t.status !== "Completed").length} tasks to complete today</p>
+                  <p className="text-blue-100 mb-4">
+                    You have {todayTasks.filter((t) => t.status !== 'Completed').length} tasks to
+                    complete today
+                  </p>
                   <div className="flex items-center gap-4 text-sm">
                     <div className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4" />
@@ -287,9 +334,11 @@ export default function WorkerDashboard() {
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-lg text-gray-800">Today's Tasks</CardTitle>
+                    <CardTitle className="text-lg text-gray-800">Today&apos;s Tasks</CardTitle>
                     <CardDescription className="text-gray-600">
-                      {todayCompletionRate}% completed ({todayTasks.filter(t => t.status === "Completed").length} of {todayTasks.length})
+                      {todayCompletionRate}% completed (
+                      {todayTasks.filter((t) => t.status === 'Completed').length} of{' '}
+                      {todayTasks.length})
                     </CardDescription>
                   </div>
                   <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 rounded-full">
@@ -301,11 +350,16 @@ export default function WorkerDashboard() {
               <CardContent>
                 <div className="space-y-3">
                   {todayTasks.map((task) => (
-                    <Card key={task.id} className={`border-l-4 ${getPriorityColor(task.priority)} rounded-xl shadow-sm`}>
+                    <Card
+                      key={task.id}
+                      className={`border-l-4 ${getPriorityColor(task.priority)} rounded-xl shadow-sm`}
+                    >
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm text-gray-800">{task.clientName}</span>
+                            <span className="font-medium text-sm text-gray-800">
+                              {task.clientName}
+                            </span>
                             {getPlatformBadge(task.platform)}
                           </div>
                           {getStatusBadge(task.status)}
@@ -346,14 +400,23 @@ export default function WorkerDashboard() {
               <CardContent>
                 <div className="space-y-3">
                   {upcomingDeadlines.map((deadline) => (
-                    <div key={deadline.id} className="p-3 rounded-xl bg-gradient-to-r from-orange-50 to-red-50 border border-orange-100">
+                    <div
+                      key={deadline.id}
+                      className="p-3 rounded-xl bg-gradient-to-r from-orange-50 to-red-50 border border-orange-100"
+                    >
                       <div className="flex items-center justify-between mb-1">
-                        <span className="font-medium text-sm text-gray-800">{deadline.clientName}</span>
-                        <Badge className={`rounded-full text-xs ${
-                          deadline.hoursLeft < 24 ? 'bg-red-100 text-red-700' :
-                          deadline.hoursLeft < 48 ? 'bg-orange-100 text-orange-700' :
-                          'bg-yellow-100 text-yellow-700'
-                        }`}>
+                        <span className="font-medium text-sm text-gray-800">
+                          {deadline.clientName}
+                        </span>
+                        <Badge
+                          className={`rounded-full text-xs ${
+                            deadline.hoursLeft < 24
+                              ? 'bg-red-100 text-red-700'
+                              : deadline.hoursLeft < 48
+                                ? 'bg-orange-100 text-orange-700'
+                                : 'bg-yellow-100 text-yellow-700'
+                          }`}
+                        >
                           {getTimeUntilDeadline(deadline.hoursLeft)}
                         </Badge>
                       </div>
