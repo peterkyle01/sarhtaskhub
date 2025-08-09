@@ -31,12 +31,12 @@ export function LogoutButton() {
       size="sm"
       onClick={handleLogout}
       disabled={isLoggingOut}
-      className="w-full justify-start gap-3 h-11 bg-destructive/5 border-destructive/20 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+      className="w-full justify-start gap-2 sm:gap-3 h-9 sm:h-11 bg-destructive/5 border-destructive/20 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
     >
-      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-destructive/10 group-hover:bg-destructive-foreground/20 transition-colors">
-        <LogOut className="h-4 w-4" />
+      <div className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-md sm:rounded-lg bg-destructive/10 group-hover:bg-destructive-foreground/20 transition-colors">
+        <LogOut className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
       </div>
-      <span className="font-medium">{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
+      <span className="font-medium text-sm">{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
     </Button>
   )
 }
