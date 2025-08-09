@@ -69,7 +69,7 @@ export default function SignInPage() {
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-background via-background/80 to-muted/20 px-4 py-10 relative">
       {/* Theme Toggle - Top Right */}
-      <div className="absolute top-6 right-6">
+      <div className="absolute top-6 right-6 z-20">
         <ThemeToggle />
       </div>
 
@@ -108,7 +108,7 @@ export default function SignInPage() {
                       <FormLabel className="text-foreground font-medium">Email Address</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="you@example.com"
+                          placeholder="example@gmail.com"
                           autoComplete="email"
                           className="h-11 bg-background/50 border-border/60 focus:border-primary/50 transition-all duration-200"
                           {...field}

@@ -158,79 +158,79 @@ export default function WorkerDashboard() {
   }
 
   return (
-    <div className="flex-1 space-y-6 p-6">
+    <div className="flex-1 space-y-4 sm:space-y-6">
       {/* Welcome */}
-      <Card className="bg-[var(--primary)] text-[var(--primary-foreground)] border-0 rounded-2xl shadow">
-        <CardContent className="p-6 flex flex-col gap-4">
+      <Card className="bg-[var(--primary)] text-[var(--primary-foreground)] border-0 rounded-xl sm:rounded-2xl shadow">
+        <CardContent className="p-4 sm:p-6 flex flex-col gap-3 sm:gap-4">
           <div>
-            <h2 className="text-2xl font-bold mb-1">Welcome back, {workerData.name}! 👋</h2>
-            <p className="opacity-80">
+            <h2 className="text-lg sm:text-2xl font-bold mb-1">Welcome back, {workerData.name}! 👋</h2>
+            <p className="opacity-80 text-sm sm:text-base">
               You have {todayTasks.filter((t) => t.status !== 'Completed').length} tasks to work on
               today.
             </p>
           </div>
-          <div className="flex flex-wrap gap-4 text-sm">
+          <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm">
             <span className="flex items-center gap-1 opacity-90">
-              <CheckCircle className="h-4 w-4" /> {workerData.completedTasks} Completed
+              <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> {workerData.completedTasks} Completed
             </span>
             <span className="flex items-center gap-1 opacity-90">
-              <Clock className="h-4 w-4" /> {workerData.pendingTasks} Pending
+              <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> {workerData.pendingTasks} Pending
             </span>
             <span className="flex items-center gap-1">
-              <AlertCircle className="h-4 w-4" /> {completionRate}% Overall Progress
+              <AlertCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> {completionRate}% Overall Progress
             </span>
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
         {/* Tasks List */}
-        <Card className="lg:col-span-2 rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)]">
-          <CardHeader className="pb-3">
+        <Card className="lg:col-span-2 rounded-xl sm:rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)]">
+          <CardHeader className="pb-2 sm:pb-3 p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-lg">Today&apos;s Tasks</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-base sm:text-lg">Today&apos;s Tasks</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
                   {todayCompletionRate}% completed (
                   {todayTasks.filter((t) => t.status === 'Completed').length} of {todayTasks.length}
                   )
                 </CardDescription>
               </div>
-              <Badge className="bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 rounded-full">
+              <Badge className="bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 rounded-full text-xs">
                 {todayTasks.length} tasks
               </Badge>
             </div>
-            <Progress value={todayCompletionRate} className="h-2" />
+            <Progress value={todayCompletionRate} className="h-1.5 sm:h-2" />
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
+          <CardContent className="p-4 sm:p-6 pt-0">
+            <div className="space-y-2 sm:space-y-3">
               {todayTasks.map((task) => (
                 <Card
                   key={task.id}
-                  className={`border-l-4 ${getPriorityAccent(task.priority)} rounded-xl shadow-sm bg-[var(--card)]`}
+                  className={`border-l-4 ${getPriorityAccent(task.priority)} rounded-lg sm:rounded-xl shadow-sm bg-[var(--card)]`}
                 >
-                  <CardContent className="p-4">
+                  <CardContent className="p-3 sm:p-4">
                     <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm">{task.clientName}</span>
-                        <Badge variant="outline" className="rounded-full text-xs">
+                      <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                        <span className="font-medium text-xs sm:text-sm truncate">{task.clientName}</span>
+                        <Badge variant="outline" className="rounded-full text-[10px] sm:text-xs">
                           {task.platform}
                         </Badge>
                       </div>
                       {getStatusBadge(task.status)}
                     </div>
-                    <div className="text-xs opacity-70 mb-2">
+                    <div className="text-[10px] sm:text-xs opacity-70 mb-1.5 sm:mb-2 truncate">
                       {task.courseName} - {task.taskType}
                     </div>
-                    <div className="flex items-center justify-between text-[11px] opacity-70">
-                      <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-between text-[10px] sm:text-[11px] opacity-70">
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                         <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" /> Due: {task.dueTime}
+                          <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Due: {task.dueTime}
                         </span>
-                        <span>Est: {task.estimatedTime}</span>
+                        <span className="hidden sm:inline">Est: {task.estimatedTime}</span>
                       </div>
-                      <Badge variant="outline" className="rounded-full text-[10px]">
-                        {task.priority} priority
+                      <Badge variant="outline" className="rounded-full text-[9px] sm:text-[10px]">
+                        {task.priority}
                       </Badge>
                     </div>
                   </CardContent>
@@ -241,25 +241,25 @@ export default function WorkerDashboard() {
         </Card>
 
         {/* Progress Chart */}
-        <Card className="rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)]">
-          <CardHeader>
-            <CardTitle className="text-lg">Progress</CardTitle>
-            <CardDescription>Completed vs Pending</CardDescription>
+        <Card className="rounded-xl sm:rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)]">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg">Progress</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">Completed vs Pending</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6 pt-0">
             <div className="flex items-center justify-center">
               <div className="relative">
                 <ChartContainer
                   config={progressChartConfig}
-                  className="h-[220px] w-[220px] flex items-center justify-center"
+                  className="h-[180px] w-[180px] sm:h-[220px] sm:w-[220px] flex items-center justify-center"
                 >
                   <PieChart>
                     <Pie
                       data={progressData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={70}
-                      outerRadius={95}
+                      innerRadius={50}
+                      outerRadius={75}
                       paddingAngle={4}
                       dataKey="value"
                     >
@@ -272,18 +272,18 @@ export default function WorkerDashboard() {
                 </ChartContainer>
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-800">{completionRate}%</div>
-                    <div className="text-xs text-gray-500">Complete</div>
+                    <div className="text-xl sm:text-2xl font-bold text-gray-800">{completionRate}%</div>
+                    <div className="text-[10px] sm:text-xs text-gray-500">Complete</div>
                   </div>
                 </div>
               </div>
             </div>
-            <div className="flex flex-col gap-2 mt-4">
+            <div className="flex flex-col gap-1.5 sm:gap-2 mt-3 sm:mt-4">
               {progressData.map((item) => (
-                <div key={item.name} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
+                <div key={item.name} className="flex items-center justify-between text-xs sm:text-sm">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
                     <span
-                      className="w-3 h-3 rounded-full"
+                      className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full"
                       style={{ backgroundColor: item.color }}
                     />
                     <span className="text-gray-600">{item.name}</span>
@@ -297,24 +297,24 @@ export default function WorkerDashboard() {
       </div>
 
       {/* Deadlines */}
-      <Card className="rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)]">
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-[var(--accent)]" /> Upcoming Deadlines
+      <Card className="rounded-xl sm:rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)]">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-[var(--accent)]" /> Upcoming Deadlines
           </CardTitle>
-          <CardDescription>Time-sensitive tasks</CardDescription>
+          <CardDescription className="text-xs sm:text-sm">Time-sensitive tasks</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-3 md:grid-cols-3">
+        <CardContent className="p-4 sm:p-6 pt-0">
+          <div className="grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {upcomingDeadlines.map((d) => (
               <div
                 key={d.id}
-                className={`p-4 rounded-xl border-l-4 ${getPriorityAccent(d.priority)} flex flex-col gap-1 bg-[var(--card)]`}
+                className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border-l-4 ${getPriorityAccent(d.priority)} flex flex-col gap-1 bg-[var(--card)]`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm truncate">{d.clientName}</span>
+                  <span className="font-medium text-xs sm:text-sm truncate">{d.clientName}</span>
                   <Badge
-                    className={`rounded-full text-[10px] font-normal ${
+                    className={`rounded-full text-[9px] sm:text-[10px] font-normal ${
                       d.hoursLeft < 24
                         ? 'bg-red-100 text-red-700'
                         : d.hoursLeft < 48
@@ -325,7 +325,7 @@ export default function WorkerDashboard() {
                     {getTimeUntil(d.hoursLeft)}
                   </Badge>
                 </div>
-                <div className="text-xs opacity-70 truncate">{d.courseName}</div>
+                <div className="text-[10px] sm:text-xs opacity-70 truncate">{d.courseName}</div>
               </div>
             ))}
           </div>
