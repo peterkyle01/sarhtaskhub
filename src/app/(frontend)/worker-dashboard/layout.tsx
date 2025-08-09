@@ -160,9 +160,7 @@ export default async function WorkerDashboardLayout({ children }: { children: Re
             <h1 className="text-base sm:text-lg font-semibold">Dashboard</h1>
           </div>
         </header>
-        <div className="flex-1 p-3 sm:p-6">
-          {children}
-        </div>
+        <div className="flex-1 p-3 sm:p-6">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   )

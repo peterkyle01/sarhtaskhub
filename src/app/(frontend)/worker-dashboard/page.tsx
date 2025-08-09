@@ -163,7 +163,9 @@ export default function WorkerDashboard() {
       <Card className="bg-[var(--primary)] text-[var(--primary-foreground)] border-0 rounded-xl sm:rounded-2xl shadow">
         <CardContent className="p-4 sm:p-6 flex flex-col gap-3 sm:gap-4">
           <div>
-            <h2 className="text-lg sm:text-2xl font-bold mb-1">Welcome back, {workerData.name}! 👋</h2>
+            <h2 className="text-lg sm:text-2xl font-bold mb-1">
+              Welcome back, {workerData.name}! 👋
+            </h2>
             <p className="opacity-80 text-sm sm:text-base">
               You have {todayTasks.filter((t) => t.status !== 'Completed').length} tasks to work on
               today.
@@ -171,13 +173,15 @@ export default function WorkerDashboard() {
           </div>
           <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm">
             <span className="flex items-center gap-1 opacity-90">
-              <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> {workerData.completedTasks} Completed
+              <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> {workerData.completedTasks}{' '}
+              Completed
             </span>
             <span className="flex items-center gap-1 opacity-90">
               <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> {workerData.pendingTasks} Pending
             </span>
             <span className="flex items-center gap-1">
-              <AlertCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> {completionRate}% Overall Progress
+              <AlertCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> {completionRate}% Overall
+              Progress
             </span>
           </div>
         </CardContent>
@@ -212,7 +216,9 @@ export default function WorkerDashboard() {
                   <CardContent className="p-3 sm:p-4">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                        <span className="font-medium text-xs sm:text-sm truncate">{task.clientName}</span>
+                        <span className="font-medium text-xs sm:text-sm truncate">
+                          {task.clientName}
+                        </span>
                         <Badge variant="outline" className="rounded-full text-[10px] sm:text-xs">
                           {task.platform}
                         </Badge>
@@ -272,7 +278,9 @@ export default function WorkerDashboard() {
                 </ChartContainer>
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div className="text-center">
-                    <div className="text-xl sm:text-2xl font-bold text-gray-800">{completionRate}%</div>
+                    <div className="text-xl sm:text-2xl font-bold text-gray-800">
+                      {completionRate}%
+                    </div>
                     <div className="text-[10px] sm:text-xs text-gray-500">Complete</div>
                   </div>
                 </div>
@@ -280,7 +288,10 @@ export default function WorkerDashboard() {
             </div>
             <div className="flex flex-col gap-1.5 sm:gap-2 mt-3 sm:mt-4">
               {progressData.map((item) => (
-                <div key={item.name} className="flex items-center justify-between text-xs sm:text-sm">
+                <div
+                  key={item.name}
+                  className="flex items-center justify-between text-xs sm:text-sm"
+                >
                   <div className="flex items-center gap-1.5 sm:gap-2">
                     <span
                       className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full"
@@ -300,7 +311,8 @@ export default function WorkerDashboard() {
       <Card className="rounded-xl sm:rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)]">
         <CardHeader className="p-4 sm:p-6">
           <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-[var(--accent)]" /> Upcoming Deadlines
+            <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-[var(--accent)]" /> Upcoming
+            Deadlines
           </CardTitle>
           <CardDescription className="text-xs sm:text-sm">Time-sensitive tasks</CardDescription>
         </CardHeader>
