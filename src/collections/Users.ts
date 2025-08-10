@@ -37,6 +37,7 @@ export const Users: CollectionConfig = {
       options: [
         { label: 'Admin', value: 'ADMIN' },
         { label: 'Worker', value: 'WORKER' },
+        { label: 'Client', value: 'CLIENT' },
       ],
       admin: {
         description: 'Determines access level within the system.',

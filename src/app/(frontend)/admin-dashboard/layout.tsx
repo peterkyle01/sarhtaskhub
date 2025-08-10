@@ -21,6 +21,7 @@ import type { Config } from '@/payload-types'
 import { ThemeToggle } from '@/components/custom/theme-toggle'
 import { LogoutButton } from './logout-button'
 import { getCurrentUser } from '@/server-actions/user-actions'
+import Link from 'next/link'
 
 // Remove incompatible interface extension; use generated type directly
 // type BaseUser = Config['user']
@@ -31,10 +32,11 @@ type AppUser = Config['user']
 
 const navigationItems = [
   { title: 'Dashboard', url: '/admin-dashboard', icon: Home },
-  { title: 'Clients', url: '/clients', icon: Users },
-  { title: 'Workers', url: '/workers', icon: UserCheck },
-  { title: 'Tasks', url: '/tasks', icon: FileText },
-  { title: 'Reports', url: '/reports', icon: BarChart3 },
+  { title: 'Users', url: '/admin-dashboard/users', icon: Users },
+  { title: 'Clients', url: '/admin-dashboard/clients', icon: UserCheck },
+  { title: 'Workers', url: '/admin-dashboard/workers', icon: UserCheck },
+  { title: 'Tasks', url: '/admin-dashboard/tasks', icon: FileText },
+  { title: 'Reports', url: '/admin-dashboard/reports', icon: BarChart3 },
 ]
 
 function AdminSidebar({ user }: { user: AppUser | null }) {
@@ -84,7 +86,7 @@ function AdminSidebar({ user }: { user: AppUser | null }) {
                     asChild
                     className="rounded-lg sm:rounded-xl transition-all duration-200 hover:bg-accent/80 hover:shadow-md data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:shadow-md data-[active=true]:border-primary/20 focus-visible:ring-2 focus-visible:ring-primary/50 group"
                   >
-                    <a
+                    <Link
                       href={item.url}
                       className="flex items-center gap-2 sm:gap-3 text-sm font-medium px-1.5 sm:px-3 py-2 sm:py-3 text-foreground/80 hover:text-foreground transition-colors"
                     >
@@ -92,7 +94,7 @@ function AdminSidebar({ user }: { user: AppUser | null }) {
                         <item.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       </div>
                       <span className="font-medium text-sm">{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -106,7 +108,7 @@ function AdminSidebar({ user }: { user: AppUser | null }) {
           {/* User Profile Section */}
           <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl bg-background/50 border border-border/20 shadow-sm hover:shadow-md transition-all duration-200">
             <Avatar className="h-8 w-8 sm:h-10 sm:w-10 ring-2 ring-background shadow-md">
-              <AvatarImage src={avatarURL} alt={displayName} />
+              <AvatarImage src={avatarURL} alt={displayName} className="object-cover" />
               <AvatarFallback className="text-xs sm:text-sm font-semibold bg-gradient-to-br from-primary/20 to-secondary/20 text-foreground">
                 {displayName
                   .split(' ')

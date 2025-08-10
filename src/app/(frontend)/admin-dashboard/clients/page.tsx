@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { Search, Plus, Edit, Trash2, Filter, Users, UserCheck, FileText, Home, BarChart3, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, Plus, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,14 +24,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -40,50 +32,6 @@ import {
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarInset,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarRail,
-  SidebarTrigger,
-} from "@/components/ui/sidebar"
-
-const navigationItems = [
-  {
-    title: "Dashboard",
-    url: "/",
-    icon: Home,
-  },
-  {
-    title: "Clients",
-    url: "/clients",
-    icon: Users,
-    isActive: true,
-  },
-  {
-    title: "Workers",
-    url: "/workers",
-    icon: UserCheck,
-  },
-  {
-    title: "Tasks",
-    url: "/tasks",
-    icon: FileText,
-  },
-  {
-    title: "Reports",
-    url: "/reports",
-    icon: BarChart3,
-  },
-]
 
 // Mock client data
 const mockClients = [
@@ -150,44 +98,6 @@ const workers = [
   "John Doe",
   "Alex Thompson"
 ]
-
-function AppSidebar() {
-  return (
-    <Sidebar>
-      <SidebarHeader>
-        <div className="flex items-center gap-2 px-4 py-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <FileText className="h-4 w-4" />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-semibold text-sm">Sarh Task Hub</span>
-            <span className="text-xs text-muted-foreground">Admin Dashboard</span>
-          </div>
-        </div>
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navigationItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={item.isActive}>
-                    <a href={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-      <SidebarRail />
-    </Sidebar>
-  )
-}
 
 function getProgressBadge(status: string) {
   switch (status) {
@@ -276,245 +186,232 @@ export default function ClientsPage() {
   }
 
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center justify-between border-b px-6">
-          <div className="flex items-center gap-2">
-            <SidebarTrigger className="-ml-1" />
-            <div className="h-4 w-px bg-border" />
-            <h1 className="text-lg font-semibold">Client Management</h1>
-          </div>
-        </header>
-
-        <main className="flex-1 space-y-6 p-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Clients</CardTitle>
-                  <CardDescription>
-                    Manage and track all your clients and their progress
-                  </CardDescription>
-                </div>
-                <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Client
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px]">
-                    <DialogHeader>
-                      <DialogTitle>Add New Client</DialogTitle>
-                      <DialogDescription>
-                        Enter the client details below to add them to the system.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="name">Client Name</Label>
-                        <Input
-                          id="name"
-                          value={newClient.name}
-                          onChange={(e) => setNewClient({...newClient, name: e.target.value})}
-                          placeholder="Enter client name"
-                        />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="platform">Platform</Label>
-                        <Select value={newClient.platform} onValueChange={(value) => setNewClient({...newClient, platform: value})}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select platform" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Cengage">Cengage</SelectItem>
-                            <SelectItem value="ALEKS">ALEKS</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="course">Course Name</Label>
-                        <Input
-                          id="course"
-                          value={newClient.courseName}
-                          onChange={(e) => setNewClient({...newClient, courseName: e.target.value})}
-                          placeholder="Enter course name"
-                        />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="deadline">Deadline</Label>
-                        <Input
-                          id="deadline"
-                          type="date"
-                          value={newClient.deadline}
-                          onChange={(e) => setNewClient({...newClient, deadline: e.target.value})}
-                        />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="worker">Assigned Worker</Label>
-                        <Select value={newClient.assignedWorker} onValueChange={(value) => setNewClient({...newClient, assignedWorker: value})}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select worker" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {workers.map((worker) => (
-                              <SelectItem key={worker} value={worker}>{worker}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="notes">Notes (Optional)</Label>
-                        <Textarea
-                          id="notes"
-                          value={newClient.notes}
-                          onChange={(e) => setNewClient({...newClient, notes: e.target.value})}
-                          placeholder="Additional notes..."
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button type="submit" onClick={handleAddClient}>Add Client</Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {/* Search and Filters */}
-              <div className="flex items-center gap-4 mb-6">
-                <div className="relative flex-1 max-w-sm">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search clients..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-8"
-                  />
-                </div>
-                <Select value={platformFilter} onValueChange={setPlatformFilter}>
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue placeholder="Platform" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Platforms</SelectItem>
-                    <SelectItem value="Cengage">Cengage</SelectItem>
-                    <SelectItem value="ALEKS">ALEKS</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={deadlineFilter} onValueChange={setDeadlineFilter}>
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue placeholder="Deadline" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Deadlines</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                    <SelectItem value="upcoming">Upcoming</SelectItem>
-                    <SelectItem value="normal">Normal</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Table */}
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Client ID</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Platform</TableHead>
-                      <TableHead>Course Name</TableHead>
-                      <TableHead>Deadline</TableHead>
-                      <TableHead>Progress Status</TableHead>
-                      <TableHead>Assigned Worker</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedClients.map((client) => (
-                      <TableRow key={client.id}>
-                        <TableCell className="font-medium">{client.id}</TableCell>
-                        <TableCell>{client.name}</TableCell>
-                        <TableCell>{getPlatformBadge(client.platform)}</TableCell>
-                        <TableCell>{client.courseName}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span>{new Date(client.deadline).toLocaleDateString()}</span>
-                            <span className={`text-xs ${
-                              getDeadlineStatus(client.deadline) === 'overdue' ? 'text-red-600' :
-                              getDeadlineStatus(client.deadline) === 'urgent' ? 'text-orange-600' :
-                              getDeadlineStatus(client.deadline) === 'upcoming' ? 'text-yellow-600' :
-                              'text-muted-foreground'
-                            }`}>
-                              {getDeadlineStatus(client.deadline) === 'overdue' ? 'Overdue' :
-                               getDeadlineStatus(client.deadline) === 'urgent' ? 'Due soon' :
-                               getDeadlineStatus(client.deadline) === 'upcoming' ? 'This week' :
-                               'On track'}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{getProgressBadge(client.progress)}</TableCell>
-                        <TableCell>{client.assignedWorker}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button variant="ghost" size="sm">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {/* Pagination */}
-              <div className="flex items-center justify-between mt-4">
-                <div className="text-sm text-muted-foreground">
-                  Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredClients.length)} of {filteredClients.length} clients
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    Previous
-                  </Button>
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <Button
-                        key={page}
-                        variant={currentPage === page ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setCurrentPage(page)}
-                        className="w-8 h-8 p-0"
-                      >
-                        {page}
-                      </Button>
-                    ))}
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Clients</CardTitle>
+              <CardDescription>
+                Manage and track all your clients and their progress
+              </CardDescription>
+            </div>
+            <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Client
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Add New Client</DialogTitle>
+                  <DialogDescription>
+                    Enter the client details below to add them to the system.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="name">Client Name</Label>
+                    <Input
+                      id="name"
+                      value={newClient.name}
+                      onChange={(e) => setNewClient({...newClient, name: e.target.value})}
+                      placeholder="Enter client name"
+                    />
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+                  <div className="grid gap-2">
+                    <Label htmlFor="platform">Platform</Label>
+                    <Select value={newClient.platform} onValueChange={(value) => setNewClient({...newClient, platform: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select platform" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Cengage">Cengage</SelectItem>
+                        <SelectItem value="ALEKS">ALEKS</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="course">Course Name</Label>
+                    <Input
+                      id="course"
+                      value={newClient.courseName}
+                      onChange={(e) => setNewClient({...newClient, courseName: e.target.value})}
+                      placeholder="Enter course name"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="deadline">Deadline</Label>
+                    <Input
+                      id="deadline"
+                      type="date"
+                      value={newClient.deadline}
+                      onChange={(e) => setNewClient({...newClient, deadline: e.target.value})}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="worker">Assigned Worker</Label>
+                    <Select value={newClient.assignedWorker} onValueChange={(value) => setNewClient({...newClient, assignedWorker: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select worker" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {workers.map((worker) => (
+                          <SelectItem key={worker} value={worker}>{worker}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="notes">Notes (Optional)</Label>
+                    <Textarea
+                      id="notes"
+                      value={newClient.notes}
+                      onChange={(e) => setNewClient({...newClient, notes: e.target.value})}
+                      placeholder="Additional notes..."
+                    />
+                  </div>
                 </div>
+                <DialogFooter>
+                  <Button type="submit" onClick={handleAddClient}>Add Client</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {/* Search and Filters */}
+          <div className="flex items-center gap-4 mb-6">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search clients..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            <Select value={platformFilter} onValueChange={setPlatformFilter}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Platform" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Platforms</SelectItem>
+                <SelectItem value="Cengage">Cengage</SelectItem>
+                <SelectItem value="ALEKS">ALEKS</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={deadlineFilter} onValueChange={setDeadlineFilter}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Deadline" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Deadlines</SelectItem>
+                <SelectItem value="urgent">Urgent</SelectItem>
+                <SelectItem value="upcoming">Upcoming</SelectItem>
+                <SelectItem value="normal">Normal</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Table */}
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Client ID</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Platform</TableHead>
+                  <TableHead>Course Name</TableHead>
+                  <TableHead>Deadline</TableHead>
+                  <TableHead>Progress Status</TableHead>
+                  <TableHead>Assigned Worker</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedClients.map((client) => (
+                  <TableRow key={client.id}>
+                    <TableCell className="font-medium">{client.id}</TableCell>
+                    <TableCell>{client.name}</TableCell>
+                    <TableCell>{getPlatformBadge(client.platform)}</TableCell>
+                    <TableCell>{client.courseName}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span>{new Date(client.deadline).toLocaleDateString()}</span>
+                        <span className={`text-xs ${
+                          getDeadlineStatus(client.deadline) === 'overdue' ? 'text-red-600' :
+                          getDeadlineStatus(client.deadline) === 'urgent' ? 'text-orange-600' :
+                          getDeadlineStatus(client.deadline) === 'upcoming' ? 'text-yellow-600' :
+                          'text-muted-foreground'
+                        }`}>
+                          {getDeadlineStatus(client.deadline) === 'overdue' ? 'Overdue' :
+                           getDeadlineStatus(client.deadline) === 'urgent' ? 'Due soon' :
+                           getDeadlineStatus(client.deadline) === 'upcoming' ? 'This week' :
+                           'On track'}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>{getProgressBadge(client.progress)}</TableCell>
+                    <TableCell>{client.assignedWorker}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button variant="ghost" size="sm">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Pagination */}
+          <div className="flex items-center justify-between mt-4">
+            <div className="text-sm text-muted-foreground">
+              Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredClients.length)} of {filteredClients.length} clients
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Previous
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(page)}
+                    className="w-8 h-8 p-0"
+                  >
+                    {page}
+                  </Button>
+                ))}
               </div>
-            </CardContent>
-          </Card>
-        </main>
-      </SidebarInset>
-    </SidebarProvider>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   )
 }

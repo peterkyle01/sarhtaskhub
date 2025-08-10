@@ -127,7 +127,7 @@ export interface User {
   /**
    * Determines access level within the system.
    */
-  role: 'ADMIN' | 'WORKER';
+  role: 'ADMIN' | 'WORKER' | 'CLIENT';
   profilePicture?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
