@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useEffect, useState } from 'react'
 import { Clock, CheckCircle, AlertCircle } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -9,8 +9,8 @@ import { PieChart, Pie, Cell } from 'recharts'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 
 // Types
-interface Task {
-  id: string
+interface DashboardTask {
+  id: number
   clientName: string
   courseName: string
   taskType: string
@@ -22,7 +22,7 @@ interface Task {
 }
 
 interface DeadlineItem {
-  id: string
+  id: number
   clientName: string
   courseName: string
   dueDate: string // ISO
@@ -30,81 +30,10 @@ interface DeadlineItem {
   priority: 'high' | 'medium' | 'low'
 }
 
-// Mock contextual data (replace with real data fetch later)
-const workerData = {
-  name: 'Sarah Wilson',
-  avatar: '/placeholder.svg?height=40&width=40',
-  role: 'Worker',
-  totalTasks: 15,
-  completedTasks: 8,
-  pendingTasks: 7,
-}
+// Remove mock workerData and todayTasks declarations, replace with state-driven data
 
-const todayTasks: Task[] = [
-  {
-    id: 'TSK001',
-    clientName: 'John Smith',
-    courseName: 'Calculus I',
-    taskType: 'Quiz',
-    platform: 'Cengage',
-    dueTime: '2:00 PM',
-    status: 'In Progress',
-    priority: 'high',
-    estimatedTime: '45 min',
-  },
-  {
-    id: 'TSK004',
-    clientName: 'Sarah Davis',
-    courseName: 'Algebra',
-    taskType: 'Assignment',
-    platform: 'ALEKS',
-    dueTime: '4:30 PM',
-    status: 'Pending',
-    priority: 'medium',
-    estimatedTime: '1.5 h',
-  },
-  {
-    id: 'TSK009',
-    clientName: 'Emma Brown',
-    courseName: 'Physics II',
-    taskType: 'Course',
-    platform: 'Cengage',
-    dueTime: '11:59 PM',
-    status: 'Completed',
-    priority: 'medium',
-    estimatedTime: '2 h',
-  },
-]
-
-const upcomingDeadlines: DeadlineItem[] = [
-  {
-    id: 'DL010',
-    clientName: 'Alex Thompson',
-    courseName: 'Chemistry',
-    dueDate: '2025-08-09',
-    hoursLeft: 18,
-    priority: 'high',
-  },
-  {
-    id: 'DL011',
-    clientName: 'Lisa Rodriguez',
-    courseName: 'Biology',
-    dueDate: '2025-08-10',
-    hoursLeft: 42,
-    priority: 'medium',
-  },
-  {
-    id: 'DL012',
-    clientName: 'David Wilson',
-    courseName: 'Geometry',
-    dueDate: '2025-08-11',
-    hoursLeft: 66,
-    priority: 'low',
-  },
-]
-
-function getStatusBadge(status: Task['status']) {
-  const map: Record<Task['status'], string> = {
+function getStatusBadge(status: DashboardTask['status']) {
+  const map: Record<DashboardTask['status'], string> = {
     Completed: 'bg-green-100 text-green-700',
     'In Progress': 'bg-sky-100 text-sky-700',
     Pending: 'bg-amber-100 text-amber-700',
@@ -112,7 +41,7 @@ function getStatusBadge(status: Task['status']) {
   return <Badge className={`${map[status]} rounded-full font-normal`}>{status}</Badge>
 }
 
-function getPriorityAccent(priority: Task['priority'] | DeadlineItem['priority']) {
+function getPriorityAccent(priority: DashboardTask['priority'] | DeadlineItem['priority']) {
   switch (priority) {
     case 'high':
       return 'border-l-red-400 bg-red-50'
@@ -132,24 +61,55 @@ function getTimeUntil(hoursLeft: number) {
 }
 
 export default function WorkerDashboard() {
-  const completionRate = useMemo(
-    () => Math.round((workerData.completedTasks / workerData.totalTasks) * 100),
-    [],
-  )
-  const todayCompletionRate = useMemo(
-    () =>
-      Math.round(
-        (todayTasks.filter((t) => t.status === 'Completed').length / todayTasks.length) * 100,
-      ),
-    [],
-  )
+  const [stats, setStats] = useState<{
+    userName: string
+    totalTasks: number
+    completedTasks: number
+    pendingTasks: number
+  } | null>(null)
+  const [todayTasks, setTodayTasks] = useState<DashboardTask[]>([])
+  const [upcomingDeadlines, setUpcomingDeadlines] = useState<DeadlineItem[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    async function load() {
+      try {
+        const { getWorkerDashboardData } = await import('@/server-actions/worker-actions')
+        const data = await getWorkerDashboardData()
+        if (!active || !data) return
+        setStats(data.stats)
+        setTodayTasks(data.todayTasks)
+        setUpcomingDeadlines(data.upcomingDeadlines)
+      } catch (e) {
+        console.error('Failed to load dashboard', e)
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+    load()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const completionRate = useMemo(() => {
+    if (!stats || stats.totalTasks === 0) return 0
+    return Math.round((stats.completedTasks / stats.totalTasks) * 100)
+  }, [stats])
+
+  const todayCompletionRate = useMemo(() => {
+    if (!todayTasks.length) return 0
+    const completed = todayTasks.filter((t) => t.status === 'Completed').length
+    return Math.round((completed / todayTasks.length) * 100)
+  }, [todayTasks])
 
   const progressData = useMemo(
     () => [
-      { name: 'Completed', value: workerData.completedTasks, color: '#10b981' },
-      { name: 'Pending', value: workerData.pendingTasks, color: '#f59e0b' },
+      { name: 'Completed', value: stats?.completedTasks || 0, color: '#10b981' },
+      { name: 'Pending', value: stats?.pendingTasks || 0, color: '#f59e0b' },
     ],
-    [],
+    [stats?.completedTasks, stats?.pendingTasks],
   )
 
   const progressChartConfig = {
@@ -164,20 +124,21 @@ export default function WorkerDashboard() {
         <CardContent className="p-4 sm:p-6 flex flex-col gap-3 sm:gap-4">
           <div>
             <h2 className="text-lg sm:text-2xl font-bold mb-1">
-              Welcome back, {workerData.name}! 👋
+              {loading ? 'Loading...' : `Welcome back, ${stats?.userName || 'Worker'}! 👋`}
             </h2>
             <p className="opacity-80 text-sm sm:text-base">
-              You have {todayTasks.filter((t) => t.status !== 'Completed').length} tasks to work on
-              today.
+              {loading
+                ? 'Fetching your stats...'
+                : `You have ${stats?.pendingTasks ?? 0} pending tasks.`}
             </p>
           </div>
           <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm">
             <span className="flex items-center gap-1 opacity-90">
-              <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> {workerData.completedTasks}{' '}
-              Completed
+              <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              {stats?.completedTasks ?? 0} Completed
             </span>
             <span className="flex items-center gap-1 opacity-90">
-              <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> {workerData.pendingTasks} Pending
+              <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> {stats?.pendingTasks ?? 0} Pending
             </span>
             <span className="flex items-center gap-1">
               <AlertCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> {completionRate}% Overall
@@ -208,6 +169,9 @@ export default function WorkerDashboard() {
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-0">
             <div className="space-y-2 sm:space-y-3">
+              {todayTasks.length === 0 && (
+                <div className="text-xs sm:text-sm opacity-60">No tasks for today.</div>
+              )}
               {todayTasks.map((task) => (
                 <Card
                   key={task.id}
@@ -233,7 +197,9 @@ export default function WorkerDashboard() {
                         <span className="flex items-center gap-1">
                           <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Due: {task.dueTime}
                         </span>
-                        <span className="hidden sm:inline">Est: {task.estimatedTime}</span>
+                        {task.estimatedTime && (
+                          <span className="hidden sm:inline">Est: {task.estimatedTime}</span>
+                        )}
                       </div>
                       <Badge variant="outline" className="rounded-full text-[9px] sm:text-[10px]">
                         {task.priority}
@@ -318,6 +284,11 @@ export default function WorkerDashboard() {
         </CardHeader>
         <CardContent className="p-4 sm:p-6 pt-0">
           <div className="grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            {upcomingDeadlines.length === 0 && (
+              <div className="text-xs sm:text-sm opacity-60 col-span-full">
+                No upcoming deadlines.
+              </div>
+            )}
             {upcomingDeadlines.map((d) => (
               <div
                 key={d.id}
