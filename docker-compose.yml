@@ -1,0 +1,24 @@
+services:
+  db:
+    image: postgres:17
+    container_name: sarhtaskhub-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tundratechies
+      POSTGRES_USER: peterkyle
+      POSTGRES_PASSWORD: secretpassword
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - '5432:5432'
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U peterkyle -d tundratechies']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  db-data:
+    driver: local
