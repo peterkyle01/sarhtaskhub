@@ -8,6 +8,7 @@ import sharp from 'sharp'
 import { migrations } from './migrations'
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
+import { Clients } from './collections/Clients'
 import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
 
 const filename = fileURLToPath(import.meta.url)
@@ -20,7 +21,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media],
+  collections: [Users, Media, Clients],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
