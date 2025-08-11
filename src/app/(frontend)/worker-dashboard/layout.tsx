@@ -23,6 +23,10 @@ import { LogoutButton } from './logout-button'
 import { getCurrentUser } from '@/server-actions/user-actions'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const fetchCache = 'force-no-store'
+
 // Replace extended interface with direct alias to generated type
 // type BaseUser = Config['user']
 // interface AppUser extends BaseUser { fullName?: string; role?: 'ADMIN' | 'WORKER'; profilePicture?: { url?: string } | null }
