@@ -2,7 +2,6 @@ import type { CollectionConfig } from 'payload'
 
 // Utility to generate sequential-like IDs (e.g., CL001) - simplistic, consider a dedicated sequence in production
 function generateClientCode(): string {
-  // CL + current timestamp base36 slice for uniqueness; could be replaced by a DB backed sequence
   return 'CL' + Date.now().toString().slice(-5)
 }
 
@@ -12,6 +11,7 @@ export const Clients: CollectionConfig = {
     useAsTitle: 'name',
     defaultColumns: [
       'clientId',
+      'user',
       'name',
       'platform',
       'courseName',
@@ -21,25 +21,28 @@ export const Clients: CollectionConfig = {
     ],
   },
   access: {
-    read: () => true, // refine later
-    // Allow ADMIN or WORKER (either via users collection role or workers auth collection)
-    create: ({ req: { user } }) => {
-      if (!user) return false
-      if ('role' in user) return user.role === 'ADMIN' || user.role === 'WORKER'
-      return user.collection === 'workers'
-    },
-    update: ({ req: { user } }) => {
-      if (!user) return false
-      if ('role' in user) return user.role === 'ADMIN' || user.role === 'WORKER'
-      return user.collection === 'workers'
-    },
-    delete: ({ req: { user } }) => {
-      if (!user) return false
-      if ('role' in user) return user.role === 'ADMIN'
-      return false
-    },
+    read: () => true,
+    create: ({ req: { user } }) =>
+      !!user && 'role' in user && (user.role === 'ADMIN' || user.role === 'WORKER'),
+    update: ({ req: { user } }) =>
+      !!user && 'role' in user && (user.role === 'ADMIN' || user.role === 'WORKER'),
+    delete: ({ req: { user } }) => !!user && 'role' in user && user.role === 'ADMIN',
   },
   fields: [
+    // Link to base user (must have role CLIENT)
+    {
+      name: 'user',
+      type: 'relationship',
+      relationTo: 'users',
+      required: true,
+      unique: true,
+      admin: {
+        description: 'Base user record (must have role CLIENT).',
+      },
+      filterOptions: {
+        role: { equals: 'CLIENT' },
+      },
+    },
     {
       name: 'clientId',
       type: 'text',
@@ -55,6 +58,9 @@ export const Clients: CollectionConfig = {
       name: 'name',
       type: 'text',
       required: true,
+      admin: {
+        description: 'Internal/client project or account name.',
+      },
     },
     {
       name: 'platform',
@@ -110,11 +116,13 @@ export const Clients: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [
-      async ({ data, operation }) => {
-        if (operation === 'create') {
-          if (!data.clientId) {
-            data.clientId = generateClientCode()
-          }
+      async ({ data, operation, req }) => {
+        if ((operation === 'create' || operation === 'update') && data.user) {
+          const userDoc = await req.payload.findByID({ collection: 'users', id: data.user })
+          if (userDoc?.role !== 'CLIENT') throw new Error('Linked user must have role CLIENT')
+        }
+        if (operation === 'create' && !data.clientId) {
+          data.clientId = generateClientCode()
         }
         return data
       },

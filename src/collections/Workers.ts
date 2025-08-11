@@ -1,64 +1,48 @@
 import type { CollectionConfig } from 'payload'
 
-// Workers collection capturing core worker data & performance metrics.
-// Password hashing handled automatically by Payload when auth: true.
-
-function generateWorkerCode(): string {
-  return 'WK' + Date.now().toString().slice(-6)
-}
-
+// Workers profile extension: extra fields for users with role WORKER.
+// Link back to base user via required relationship.
 export const Workers: CollectionConfig = {
   slug: 'workers',
-  auth: {
-    tokenExpiration: 60 * 60 * 24 * 7, // 7 days
-  },
   admin: {
-    useAsTitle: 'fullName',
-    defaultColumns: ['workerId', 'fullName', 'email', 'tasksAssigned', 'performance.overallScore'],
+    useAsTitle: 'user',
+    defaultColumns: ['user', 'workerId', 'performance.overallScore'],
   },
   access: {
-    read: () => true, // refine later
-    create: ({ req: { user } }) => {
-      if (!user) return false
-      if ('role' in user) return user.role === 'ADMIN'
-      return false
-    },
-    update: ({ req: { user } }) => {
-      if (!user) return false
-      if ('role' in user) return user.role === 'ADMIN'
-      return false
-    },
-    delete: ({ req: { user } }) => {
-      if (!user) return false
-      if ('role' in user) return user.role === 'ADMIN'
-      return false
-    },
+    read: () => true,
+    create: ({ req: { user } }) => !!user && 'role' in user && user.role === 'ADMIN',
+    update: ({ req: { user } }) => !!user && 'role' in user && user.role === 'ADMIN',
+    delete: ({ req: { user } }) => !!user && 'role' in user && user.role === 'ADMIN',
   },
   fields: [
+    {
+      name: 'user',
+      type: 'relationship',
+      relationTo: 'users',
+      required: true,
+      unique: true,
+      admin: {
+        description: 'Base user record (must have role WORKER).',
+      },
+      filterOptions: {
+        role: { equals: 'WORKER' },
+      },
+    },
     {
       name: 'workerId',
       type: 'text',
       label: 'Worker ID',
       unique: true,
       index: true,
-      required: false,
       admin: {
         readOnly: true,
-        description: 'Auto-generated (e.g., WK123456)',
       },
     },
-    {
-      name: 'fullName',
-      label: 'Full Name',
-      type: 'text',
-      required: true,
-    },
-    // email & password handled by auth; email field auto-added by Payload when auth true unless we explicitly define
     {
       name: 'tasksAssigned',
       label: 'Tasks Assigned',
       type: 'relationship',
-      relationTo: 'clients', // placeholder until a tasks collection is added
+      relationTo: 'clients',
       hasMany: true,
       required: false,
     },
@@ -67,44 +51,24 @@ export const Workers: CollectionConfig = {
       type: 'group',
       label: 'Performance Metrics',
       fields: [
-        {
-          name: 'overallScore',
-          type: 'number',
-          label: 'Overall Score',
-          min: 0,
-          max: 100,
-          defaultValue: 0,
-        },
-        {
-          name: 'tasksCompleted',
-          type: 'number',
-          label: 'Tasks Completed',
-          defaultValue: 0,
-        },
-        {
-          name: 'averageCompletionTime',
-          type: 'number',
-          label: 'Avg Completion Time (hrs)',
-          defaultValue: 0,
-        },
-        {
-          name: 'lastEvaluation',
-          type: 'date',
-          label: 'Last Evaluation Date',
-        },
-        {
-          name: 'notes',
-          type: 'textarea',
-          label: 'Performance Notes',
-        },
+        { name: 'overallScore', type: 'number', min: 0, max: 100, defaultValue: 0 },
+        { name: 'tasksCompleted', type: 'number', defaultValue: 0 },
+        { name: 'averageCompletionTime', type: 'number', defaultValue: 0 },
+        { name: 'lastEvaluation', type: 'date' },
+        { name: 'notes', type: 'textarea' },
       ],
     },
   ],
   hooks: {
     beforeChange: [
-      async ({ data, operation }) => {
-        if (operation === 'create') {
-          if (!data.workerId) data.workerId = generateWorkerCode()
+      async ({ data, operation, req }) => {
+        if ((operation === 'create' || operation === 'update') && data.user) {
+          // Ensure linked user has role WORKER
+          const userDoc = await req.payload.findByID({ collection: 'users', id: data.user })
+          if (userDoc?.role !== 'WORKER') throw new Error('Linked user must have role WORKER')
+          if (!data.workerId) {
+            data.workerId = 'WK' + Date.now().toString().slice(-6)
+          }
         }
         return data
       },

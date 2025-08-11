@@ -1,5 +1,10 @@
 import type { CollectionConfig } from 'payload'
 
+// Base Users collection: all actors (ADMIN, WORKER, CLIENT)
+function generateWorkerCode(): string {
+  return 'WK' + Date.now().toString().slice(-6)
+}
+
 export const Users: CollectionConfig = {
   slug: 'users',
   admin: {
@@ -43,6 +48,19 @@ export const Users: CollectionConfig = {
         description: 'Determines access level within the system.',
       },
     },
+    // Auto-generated workerId for users whose role is WORKER (mirrors Clients/Tasks pattern)
+    {
+      name: 'workerId',
+      type: 'text',
+      label: 'Worker ID',
+      unique: true,
+      index: true,
+      admin: {
+        readOnly: true,
+        description: 'Auto-generated identifier for worker accounts (e.g., WK123456).',
+        condition: (data) => data?.role === 'WORKER',
+      },
+    },
     {
       name: 'profilePicture',
       label: 'Profile Picture',
@@ -51,4 +69,16 @@ export const Users: CollectionConfig = {
       required: false,
     },
   ],
+  hooks: {
+    beforeChange: [
+      async ({ data, operation }) => {
+        if ((operation === 'create' || operation === 'update') && data?.role === 'WORKER') {
+          if (!data.workerId) {
+            data.workerId = generateWorkerCode()
+          }
+        }
+        return data
+      },
+    ],
+  },
 }

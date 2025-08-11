@@ -1,7 +1,8 @@
 'use client'
 
+import React from 'react'
 import { useState, useTransition } from 'react'
-import { createClient } from '@/server-actions/client-actions'
+import { createClient, updateClient } from '@/server-actions/client-actions'
 import { Search, Plus, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -54,6 +55,7 @@ export interface ClientItem {
 interface Props {
   initialClients: ClientItem[]
   workers: WorkerUser[]
+  clientUsers?: { id: string | number; fullName?: string; email?: string }[]
 }
 
 function getProgressBadge(status: string) {
@@ -90,12 +92,14 @@ function getDeadlineStatus(deadline: string) {
   return 'normal'
 }
 
-export default function ClientsClient({ initialClients, workers }: Props) {
+export default function ClientsClient({ initialClients, workers, clientUsers = [] }: Props) {
   const [searchTerm, setSearchTerm] = useState('')
   const [platformFilter, setPlatformFilter] = useState('all')
   const [deadlineFilter, setDeadlineFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [editingClient, setEditingClient] = useState<ClientItem | null>(null)
+  const [isEditOpen, setIsEditOpen] = useState(false)
   const [optimisticClients, setOptimisticClients] = useState<ClientItem[]>(initialClients)
   const [pending, startTransition] = useTransition()
   const router = useRouter()
@@ -132,7 +136,7 @@ export default function ClientsClient({ initialClients, workers }: Props) {
     const optimistic: ClientItem = {
       id: tempId,
       clientId: 'NEW',
-      name: formData.get('name') as string,
+      name: '', // will resolve to user fullName after refresh
       platform: formData.get('platform') as string,
       courseName: formData.get('courseName') as string,
       deadline: (formData.get('deadline') as string) || undefined,
@@ -149,6 +153,38 @@ export default function ClientsClient({ initialClients, workers }: Props) {
       } catch (_e) {
         // rollback on error
         setOptimisticClients((prev) => prev.filter((c) => c.id !== tempId))
+      }
+    })
+  }
+
+  function handleEditSave(data: Partial<ClientItem>) {
+    if (!editingClient) return
+    const updatedClient: ClientItem = {
+      ...editingClient,
+      ...data,
+      id: editingClient.id,
+      clientId: editingClient.clientId,
+    }
+    setOptimisticClients((prev) =>
+      prev.map((client) => (client.id === updatedClient.id ? updatedClient : client)),
+    )
+    startTransition(async () => {
+      try {
+        await updateClient(Number(updatedClient.id), {
+          platform: updatedClient.platform as 'Cengage' | 'ALEKS' | undefined,
+          courseName: updatedClient.courseName,
+          deadline: updatedClient.deadline,
+          assignedWorker:
+            typeof updatedClient.assignedWorker === 'object' && updatedClient.assignedWorker
+              ? Number(updatedClient.assignedWorker.id)
+              : undefined,
+          notes: updatedClient.notes,
+        })
+        router.refresh()
+      } catch (_e) {
+        setOptimisticClients((prev) =>
+          prev.map((client) => (client.id === updatedClient.id ? editingClient : client)),
+        )
       }
     })
   }
@@ -179,10 +215,7 @@ export default function ClientsClient({ initialClients, workers }: Props) {
                   </DialogDescription>
                 </DialogHeader>
                 <form action={handleCreate} className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="name">Client Name</Label>
-                    <Input id="name" name="name" placeholder="Enter client name" required />
-                  </div>
+                  {/* Removed explicit Client Name field; will use selected user fullName */}
                   <div className="grid gap-2">
                     <Label htmlFor="platform">Platform</Label>
                     <Select
@@ -237,6 +270,28 @@ export default function ClientsClient({ initialClients, workers }: Props) {
                       </SelectContent>
                     </Select>
                     <input type="hidden" name="assignedWorker" />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="user">Client User</Label>
+                    <Select
+                      onValueChange={(v) => {
+                        const hidden =
+                          document.querySelector<HTMLInputElement>('input[name="user"]')
+                        if (hidden) hidden.value = v
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select client user" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clientUsers.map((u) => (
+                          <SelectItem key={String(u.id)} value={String(u.id)}>
+                            {u.fullName || u.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <input type="hidden" name="user" required />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="notes">Notes (Optional)</Label>
@@ -334,8 +389,8 @@ export default function ClientsClient({ initialClients, workers }: Props) {
                               : getDeadlineStatus(client.deadline) === 'urgent'
                                 ? 'Due soon'
                                 : getDeadlineStatus(client.deadline) === 'upcoming'
-                                  ? 'This week'
-                                  : 'On track'
+                                  ? 'Upcoming'
+                                  : '—'
                             : '—'}
                         </span>
                       </div>
@@ -350,7 +405,14 @@ export default function ClientsClient({ initialClients, workers }: Props) {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="sm">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setEditingClient(client)
+                            setIsEditOpen(true)
+                          }}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button
@@ -407,6 +469,171 @@ export default function ClientsClient({ initialClients, workers }: Props) {
           </div>
         </CardContent>
       </Card>
+      <EditClientDialog
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        client={editingClient}
+        workers={workers}
+        onSave={handleEditSave}
+      />
     </div>
+  )
+}
+
+// Edit dialog component appended
+function EditClientDialog({
+  open,
+  onOpenChange,
+  client,
+  workers,
+  onSave,
+}: {
+  open: boolean
+  onOpenChange: (v: boolean) => void
+  client: ClientItem | null
+  workers: WorkerUser[]
+  onSave: (data: Partial<ClientItem>) => void
+}) {
+  const unset = {
+    platform: !client?.platform,
+    courseName: !client?.courseName,
+    deadline: !client?.deadline,
+  }
+  const [formState, setFormState] = React.useState({
+    platform: client?.platform || '',
+    courseName: client?.courseName || '',
+    deadline: client?.deadline ? client.deadline.slice(0, 10) : '',
+    assignedWorker:
+      client && typeof client.assignedWorker === 'object' && client.assignedWorker !== null
+        ? String(client.assignedWorker.id)
+        : '',
+    notes: client?.notes || '',
+  })
+  React.useEffect(() => {
+    setFormState({
+      platform: client?.platform || '',
+      courseName: client?.courseName || '',
+      deadline: client?.deadline ? client.deadline.slice(0, 10) : '',
+      assignedWorker:
+        client && typeof client.assignedWorker === 'object' && client.assignedWorker !== null
+          ? String(client.assignedWorker.id)
+          : '',
+      notes: client?.notes || '',
+    })
+  }, [client])
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px]">
+        {!client ? (
+          <div className="py-8 text-sm text-muted-foreground">No client selected.</div>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle>Edit Client</DialogTitle>
+              <DialogDescription>
+                Update non-user fields below. Name is managed on the Users page.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid gap-1">
+                <Label>Name</Label>
+                <div className="text-sm font-medium">{client.name || '—'}</div>
+                <p className="text-xs text-muted-foreground">
+                  Edit this name from Users &gt; User Management.
+                </p>
+              </div>
+              <div className="grid gap-2">
+                <Label>
+                  Platform{' '}
+                  {unset.platform && <span className="text-xs text-orange-600">(unset)</span>}
+                </Label>
+                <Select
+                  value={formState.platform}
+                  onValueChange={(v) => setFormState((s) => ({ ...s, platform: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select platform" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Cengage">Cengage</SelectItem>
+                    <SelectItem value="ALEKS">ALEKS</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-courseName">
+                  Course Name{' '}
+                  {unset.courseName && <span className="text-xs text-orange-600">(unset)</span>}
+                </Label>
+                <Input
+                  id="edit-courseName"
+                  value={formState.courseName}
+                  onChange={(e) => setFormState((s) => ({ ...s, courseName: e.target.value }))}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-deadline">
+                  Deadline{' '}
+                  {unset.deadline && <span className="text-xs text-orange-600">(unset)</span>}
+                </Label>
+                <Input
+                  id="edit-deadline"
+                  type="date"
+                  value={formState.deadline}
+                  onChange={(e) => setFormState((s) => ({ ...s, deadline: e.target.value }))}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>Assigned Worker</Label>
+                <Select
+                  value={formState.assignedWorker}
+                  onValueChange={(v) => setFormState((s) => ({ ...s, assignedWorker: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select worker" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {workers.map((w) => (
+                      <SelectItem key={String(w.id)} value={String(w.id)}>
+                        {w.fullName || w.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-notes">Notes</Label>
+                <Textarea
+                  id="edit-notes"
+                  value={formState.notes}
+                  onChange={(e) => setFormState((s) => ({ ...s, notes: e.target.value }))}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  onSave({
+                    platform: formState.platform,
+                    courseName: formState.courseName,
+                    deadline: formState.deadline,
+                    assignedWorker: formState.assignedWorker
+                      ? Number(formState.assignedWorker)
+                      : undefined,
+                    notes: formState.notes,
+                  })
+                  onOpenChange(false)
+                }}
+              >
+                Save
+              </Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
   )
 }

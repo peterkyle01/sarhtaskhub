@@ -64,7 +64,6 @@ export type SupportedTimezones =
 export interface Config {
   auth: {
     users: UserAuthOperations;
-    workers: WorkerAuthOperations;
   };
   blocks: {};
   collections: {
@@ -94,37 +93,15 @@ export interface Config {
   globals: {};
   globalsSelect: {};
   locale: null;
-  user:
-    | (User & {
-        collection: 'users';
-      })
-    | (Worker & {
-        collection: 'workers';
-      });
+  user: User & {
+    collection: 'users';
+  };
   jobs: {
     tasks: unknown;
     workflows: unknown;
   };
 }
 export interface UserAuthOperations {
-  forgotPassword: {
-    email: string;
-    password: string;
-  };
-  login: {
-    email: string;
-    password: string;
-  };
-  registerFirstUser: {
-    email: string;
-    password: string;
-  };
-  unlock: {
-    email: string;
-    password: string;
-  };
-}
-export interface WorkerAuthOperations {
   forgotPassword: {
     email: string;
     password: string;
@@ -157,6 +134,10 @@ export interface User {
    * Determines access level within the system.
    */
   role: 'ADMIN' | 'WORKER' | 'CLIENT';
+  /**
+   * Auto-generated identifier for worker accounts (e.g., WK123456).
+   */
+  workerId?: string | null;
   profilePicture?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
@@ -203,9 +184,16 @@ export interface Media {
 export interface Client {
   id: number;
   /**
+   * Base user record (must have role CLIENT).
+   */
+  user: number | User;
+  /**
    * Auto-generated (e.g., CL12345)
    */
   clientId?: string | null;
+  /**
+   * Internal/client project or account name.
+   */
   name: string;
   platform: 'Cengage' | 'ALEKS';
   courseName: string;
@@ -226,10 +214,10 @@ export interface Client {
 export interface Worker {
   id: number;
   /**
-   * Auto-generated (e.g., WK123456)
+   * Base user record (must have role WORKER).
    */
+  user: number | User;
   workerId?: string | null;
-  fullName: string;
   tasksAssigned?: (number | Client)[] | null;
   performance?: {
     overallScore?: number | null;
@@ -240,21 +228,6 @@ export interface Worker {
   };
   updatedAt: string;
   createdAt: string;
-  email: string;
-  resetPasswordToken?: string | null;
-  resetPasswordExpiration?: string | null;
-  salt?: string | null;
-  hash?: string | null;
-  loginAttempts?: number | null;
-  lockUntil?: string | null;
-  sessions?:
-    | {
-        id: string;
-        createdAt?: string | null;
-        expiresAt: string;
-      }[]
-    | null;
-  password?: string | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -314,15 +287,10 @@ export interface PayloadLockedDocument {
         value: number | Task;
       } | null);
   globalSlug?: string | null;
-  user:
-    | {
-        relationTo: 'users';
-        value: number | User;
-      }
-    | {
-        relationTo: 'workers';
-        value: number | Worker;
-      };
+  user: {
+    relationTo: 'users';
+    value: number | User;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -332,15 +300,10 @@ export interface PayloadLockedDocument {
  */
 export interface PayloadPreference {
   id: number;
-  user:
-    | {
-        relationTo: 'users';
-        value: number | User;
-      }
-    | {
-        relationTo: 'workers';
-        value: number | Worker;
-      };
+  user: {
+    relationTo: 'users';
+    value: number | User;
+  };
   key?: string | null;
   value?:
     | {
@@ -373,6 +336,7 @@ export interface UsersSelect<T extends boolean = true> {
   fullName?: T;
   phone?: T;
   role?: T;
+  workerId?: T;
   profilePicture?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -415,6 +379,7 @@ export interface MediaSelect<T extends boolean = true> {
  * via the `definition` "clients_select".
  */
 export interface ClientsSelect<T extends boolean = true> {
+  user?: T;
   clientId?: T;
   name?: T;
   platform?: T;
@@ -431,8 +396,8 @@ export interface ClientsSelect<T extends boolean = true> {
  * via the `definition` "workers_select".
  */
 export interface WorkersSelect<T extends boolean = true> {
+  user?: T;
   workerId?: T;
-  fullName?: T;
   tasksAssigned?: T;
   performance?:
     | T
@@ -445,20 +410,6 @@ export interface WorkersSelect<T extends boolean = true> {
       };
   updatedAt?: T;
   createdAt?: T;
-  email?: T;
-  resetPasswordToken?: T;
-  resetPasswordExpiration?: T;
-  salt?: T;
-  hash?: T;
-  loginAttempts?: T;
-  lockUntil?: T;
-  sessions?:
-    | T
-    | {
-        id?: T;
-        createdAt?: T;
-        expiresAt?: T;
-      };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

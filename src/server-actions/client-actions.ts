@@ -24,17 +24,27 @@ function normalizeWorker(ref: string | null): string | number | undefined {
   return ref
 }
 
+function normalizeUser(ref: string | null): string | number | undefined {
+  if (!ref) return undefined
+  if (/^\d+$/.test(ref)) return Number(ref)
+  return ref
+}
+
 export async function createClient(formData: FormData) {
   const payload = (await getPayload({ config })) as Payload
 
-  const name = normalizeText(formData.get('name'), true)
-  const platformRaw = normalizeText(formData.get('platform'), true)
+  const nameRaw = normalizeText(formData.get('name')) // optional now
+  const platformRaw = normalizeText(formData.get('platform'), true) as
+    | 'Cengage'
+    | 'ALEKS'
+    | undefined
   const courseName = normalizeText(formData.get('courseName'), true)
   const deadlineRaw = normalizeText(formData.get('deadline'))
   const assignedWorkerRaw = normalizeText(formData.get('assignedWorker'))
   const notes = normalizeText(formData.get('notes'))
+  const userRefRaw = normalizeText(formData.get('user'), true)
 
-  if (!name || !platformRaw || !courseName) {
+  if (!platformRaw || !courseName || !userRefRaw) {
     throw new Error('Missing required fields')
   }
   if (!ALLOWED_PLATFORMS.has(platformRaw)) {
@@ -42,25 +52,25 @@ export async function createClient(formData: FormData) {
   }
 
   const assignedWorker = normalizeWorker(assignedWorkerRaw || null)
+  const userRef = normalizeUser(userRefRaw)
+  if (typeof userRef !== 'number') throw new Error('Invalid user reference') // enforce numeric for type safety
 
   // Basic deadline validation (YYYY-MM-DD)
-  const deadline = deadlineRaw && /\d{4}-\d{2}-\d{2}/.test(deadlineRaw) ? deadlineRaw : undefined
+  const deadline = deadlineRaw && /\d{4}-\d{2}-\d{2}/.test(deadlineRaw) ? deadlineRaw : ''
 
   try {
-    interface CreateArgs {
-      collection: string
-      data: Record<string, unknown>
-    }
-    interface CreateCapable {
-      create: (args: CreateArgs) => Promise<unknown>
-    }
-    const created = await (payload as unknown as CreateCapable).create({
+    // Ensure linked user is role CLIENT
+    const userDoc = await payload.findByID({ collection: 'users', id: userRef })
+    if (userDoc?.role !== 'CLIENT') throw new Error('Selected user is not a CLIENT role')
+
+    const created = await payload.create({
       collection: CLIENTS_COLLECTION,
       data: {
-        name,
+        user: userRef,
+        name: nameRaw || userDoc.fullName, // default to user fullName
         platform: platformRaw,
         courseName,
-        deadline: deadline || undefined,
+        deadline,
         progress: 'Not Started',
         assignedWorker: typeof assignedWorker === 'number' ? assignedWorker : undefined,
         notes,
@@ -72,5 +82,39 @@ export async function createClient(formData: FormData) {
   } catch (err) {
     console.error('Failed to create client', err)
     throw new Error('Failed to create client')
+  }
+}
+
+export async function updateClient(
+  id: number,
+  data: Partial<{
+    name: string
+    platform: 'Cengage' | 'ALEKS'
+    courseName: string
+    deadline: string
+    progress: string
+    assignedWorker: number | null
+    notes: string
+  }>,
+) {
+  const payload = (await getPayload({ config })) as Payload
+  try {
+    const sanitized: Record<string, unknown> = {}
+    if (data.name !== undefined) sanitized.name = data.name.trim()
+    if (data.platform !== undefined && ALLOWED_PLATFORMS.has(data.platform))
+      sanitized.platform = data.platform
+    if (data.courseName !== undefined) sanitized.courseName = data.courseName.trim()
+    if (data.deadline !== undefined) sanitized.deadline = data.deadline
+    if (data.progress !== undefined) sanitized.progress = data.progress
+    if (data.assignedWorker !== undefined)
+      sanitized.assignedWorker = data.assignedWorker || undefined
+    if (data.notes !== undefined) sanitized.notes = data.notes
+
+    const updated = await payload.update({ collection: CLIENTS_COLLECTION, id, data: sanitized })
+    revalidatePath('/admin-dashboard/clients')
+    return updated
+  } catch (e) {
+    console.error('Failed to update client', e)
+    throw new Error('Failed to update client')
   }
 }

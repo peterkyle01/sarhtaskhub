@@ -47,6 +47,7 @@ import {
 
 interface Props {
   initialWorkers: WorkerDoc[]
+  availableUsers: { id: number; fullName?: string; email?: string }[]
 }
 
 function performanceScore(w: WorkerDoc): number {
@@ -60,7 +61,9 @@ function ratingLabel(score: number) {
   return 'Needs Improvement'
 }
 
-export default function WorkersClient({ initialWorkers }: Props) {
+export default function WorkersClient({ initialWorkers, availableUsers }: Props) {
+  // Whether add new worker functionality should be enabled
+  const canAdd = availableUsers.length > 0
   const [workers, setWorkers] = useState<WorkerDoc[]>(initialWorkers)
   const [searchTerm, setSearchTerm] = useState('')
   const [performanceFilter, setPerformanceFilter] = useState('all')
@@ -68,7 +71,7 @@ export default function WorkersClient({ initialWorkers }: Props) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isTaskHistoryModalOpen, setIsTaskHistoryModalOpen] = useState(false)
   const [selectedWorker, setSelectedWorker] = useState<WorkerDoc | null>(null)
-  const [newWorker, setNewWorker] = useState({ fullName: '', email: '', password: '' })
+  const [newUserId, setNewUserId] = useState<string>('')
   const [_, startTransition] = useTransition()
 
   const itemsPerPage = 6
@@ -96,15 +99,11 @@ export default function WorkersClient({ initialWorkers }: Props) {
   function handleAddWorker() {
     startTransition(async () => {
       try {
-        if (!newWorker.fullName || !newWorker.email || !newWorker.password) return
-        const created = await createWorker({
-          fullName: newWorker.fullName,
-          email: newWorker.email,
-          password: newWorker.password,
-        })
+        if (!newUserId) return
+        const created = await createWorker({ userId: Number(newUserId) })
         if (created) setWorkers((prev) => [created, ...prev])
         setIsAddModalOpen(false)
-        setNewWorker({ fullName: '', email: '', password: '' })
+        setNewUserId('')
       } catch (e) {
         console.error(e)
       }
@@ -127,53 +126,44 @@ export default function WorkersClient({ initialWorkers }: Props) {
               <CardTitle>Workers</CardTitle>
               <CardDescription>Manage workers and performance</CardDescription>
             </div>
-            <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Worker
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Add New Worker</DialogTitle>
-                  <DialogDescription>Create a new worker account.</DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="fullName">Full Name</Label>
-                    <Input
-                      id="fullName"
-                      value={newWorker.fullName}
-                      onChange={(e) => setNewWorker({ ...newWorker, fullName: e.target.value })}
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={newWorker.email}
-                      onChange={(e) => setNewWorker({ ...newWorker, email: e.target.value })}
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="password">Password</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={newWorker.password}
-                      onChange={(e) => setNewWorker({ ...newWorker, password: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button type="submit" onClick={handleAddWorker}>
+            {canAdd && (
+              <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
                     Add Worker
                   </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Add New Worker</DialogTitle>
+                    <DialogDescription>Create a new worker account.</DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="userId">Select Existing Worker User</Label>
+                      <Select onValueChange={(v) => setNewUserId(v)} value={newUserId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose user" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableUsers.map((u) => (
+                            <SelectItem key={u.id} value={String(u.id)}>
+                              {(u.fullName || u.email) ?? `User ${u.id}`}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button type="submit" onClick={handleAddWorker}>
+                      Add Worker
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -215,8 +205,9 @@ export default function WorkersClient({ initialWorkers }: Props) {
               <TableBody>
                 {paginated.map((w) => {
                   const score = performanceScore(w)
+                  const isSynthetic = w.id < 0 // negative id means no actual profile document yet
                   return (
-                    <TableRow key={w.id}>
+                    <TableRow key={w.id} className={isSynthetic ? 'opacity-80' : ''}>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10">
@@ -232,6 +223,7 @@ export default function WorkersClient({ initialWorkers }: Props) {
                             <div className="font-medium">{w.fullName}</div>
                             <div className="text-xs text-muted-foreground">
                               {ratingLabel(score)}
+                              {isSynthetic && ' (no profile)'}
                             </div>
                           </div>
                         </div>
@@ -259,38 +251,42 @@ export default function WorkersClient({ initialWorkers }: Props) {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                <Trash2 className="h-4 w-4" />
+                          {!isSynthetic && (
+                            <>
+                              <Button variant="ghost" size="sm">
+                                <Edit className="h-4 w-4" />
                               </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Worker</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete {w.fullName}? This action cannot
-                                  be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  className="bg-red-600 hover:bg-red-700"
-                                  onClick={() => handleDelete(w.id)}
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-red-600 hover:text-red-700"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Worker</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to delete {w.fullName}? This action
+                                      cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      className="bg-red-600 hover:bg-red-700"
+                                      onClick={() => handleDelete(w.id)}
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
