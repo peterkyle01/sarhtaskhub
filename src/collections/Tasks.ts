@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import type { User } from '../payload-types'
 
 function generateTaskCode(): string {
   return 'TK' + Date.now().toString().slice(-6)
@@ -23,18 +24,18 @@ export const Tasks: CollectionConfig = {
     read: () => true,
     create: ({ req: { user } }) => {
       if (!user) return false
-      if ('role' in user) return user.role === 'ADMIN' || user.role === 'WORKER'
-      return user.collection === 'workers'
+      const u = user as User
+      return u.role === 'ADMIN' || u.role === 'WORKER'
     },
     update: ({ req: { user } }) => {
       if (!user) return false
-      if ('role' in user) return user.role === 'ADMIN' || user.role === 'WORKER'
-      return user.collection === 'workers'
+      const u = user as User
+      return u.role === 'ADMIN' || u.role === 'WORKER'
     },
     delete: ({ req: { user } }) => {
       if (!user) return false
-      if ('role' in user) return user.role === 'ADMIN'
-      return false
+      const u = user as User
+      return u.role === 'ADMIN'
     },
   },
   fields: [
