@@ -1,28 +1,26 @@
 import type { CollectionConfig } from 'payload'
 
-// Utility to generate sequential-like IDs (e.g., CL001) - simplistic, consider a dedicated sequence in production
-function generateClientCode(): string {
-  // CL + current timestamp base36 slice for uniqueness; could be replaced by a DB backed sequence
-  return 'CL' + Date.now().toString().slice(-5)
+function generateTaskCode(): string {
+  return 'TK' + Date.now().toString().slice(-6)
 }
 
-export const Clients: CollectionConfig = {
-  slug: 'clients',
+export const Tasks: CollectionConfig = {
+  slug: 'tasks',
   admin: {
-    useAsTitle: 'name',
+    useAsTitle: 'taskId',
     defaultColumns: [
-      'clientId',
-      'name',
+      'taskId',
+      'client',
       'platform',
-      'courseName',
-      'deadline',
-      'progress',
-      'assignedWorker',
+      'taskType',
+      'status',
+      'worker',
+      'dueDate',
+      'score',
     ],
   },
   access: {
-    read: () => true, // refine later
-    // Allow ADMIN or WORKER (either via users collection role or workers auth collection)
+    read: () => true,
     create: ({ req: { user } }) => {
       if (!user) return false
       if ('role' in user) return user.role === 'ADMIN' || user.role === 'WORKER'
@@ -41,69 +39,92 @@ export const Clients: CollectionConfig = {
   },
   fields: [
     {
-      name: 'clientId',
+      name: 'taskId',
+      label: 'Task ID',
       type: 'text',
-      label: 'Client ID',
       unique: true,
+
       index: true,
       admin: {
         readOnly: true,
-        description: 'Auto-generated (e.g., CL12345)',
+        description: 'Auto-generated (e.g., TK123456)',
       },
     },
     {
-      name: 'name',
-      type: 'text',
+      name: 'client',
+      label: 'Client',
+      type: 'relationship',
+      relationTo: 'clients',
       required: true,
+      admin: {
+        description: 'Reference to the associated client',
+      },
     },
     {
       name: 'platform',
+      label: 'Platform',
       type: 'select',
       required: true,
       options: [
         { label: 'Cengage', value: 'Cengage' },
         { label: 'ALEKS', value: 'ALEKS' },
+        { label: 'MATLAB', value: 'MATLAB' },
       ],
     },
     {
-      name: 'courseName',
-      type: 'text',
-      required: true,
-      label: 'Course Name',
-    },
-    {
-      name: 'deadline',
-      type: 'date',
-      label: 'Deadline',
-      required: true,
-    },
-    {
-      name: 'progress',
+      name: 'taskType',
+      label: 'Task Type',
       type: 'select',
       required: true,
-      defaultValue: 'Not Started',
       options: [
-        { label: 'Not Started', value: 'Not Started' },
-        { label: 'In Progress', value: 'In Progress' },
-        { label: 'Completed', value: 'Completed' },
-        { label: 'Overdue', value: 'Overdue' },
+        { label: 'Assignment', value: 'Assignment' },
+        { label: 'Quiz', value: 'Quiz' },
+        { label: 'Course', value: 'Course' },
       ],
     },
     {
-      name: 'assignedWorker',
+      name: 'dueDate',
+      label: 'Due Date',
+      type: 'date',
+      required: true,
+    },
+    {
+      name: 'status',
+      label: 'Status',
+      type: 'select',
+      required: true,
+      defaultValue: 'Pending',
+      options: [
+        { label: 'Pending', value: 'Pending' },
+        { label: 'In Progress', value: 'In Progress' },
+        { label: 'Completed', value: 'Completed' },
+      ],
+    },
+    {
+      name: 'worker',
+      label: 'Worker',
       type: 'relationship',
       relationTo: 'users',
-      label: 'Assigned Worker',
       required: false,
       admin: {
-        description: 'User with role WORKER',
+        description: 'Assigned worker (user with role WORKER)',
       },
       filterOptions: {
         role: { equals: 'WORKER' },
       },
     },
     {
+      name: 'score',
+      label: 'Score',
+      type: 'number',
+      required: false,
+      admin: {
+        description: 'Score / grade if applicable',
+      },
+    },
+    {
       name: 'notes',
+      label: 'Notes',
       type: 'textarea',
       required: false,
     },
@@ -112,8 +133,8 @@ export const Clients: CollectionConfig = {
     beforeChange: [
       async ({ data, operation }) => {
         if (operation === 'create') {
-          if (!data.clientId) {
-            data.clientId = generateClientCode()
+          if (!data.taskId) {
+            data.taskId = generateTaskCode()
           }
         }
         return data
@@ -122,4 +143,4 @@ export const Clients: CollectionConfig = {
   },
 }
 
-export default Clients
+export default Tasks

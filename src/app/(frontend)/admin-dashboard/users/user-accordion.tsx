@@ -13,13 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Users, Mail, UserCheck, User, ChevronDown, ChevronUp, Eye, KeyRound } from 'lucide-react'
-import {
-  sendWelcomeEmailAction,
-  resetPasswordAction,
-  updateUserDetailsAction,
-  setUserPasswordAction,
-} from '@/server-actions/user-actions'
+import { Users, UserCheck, User, ChevronDown, ChevronUp, Eye } from 'lucide-react'
+import { updateUserDetailsAction } from '@/server-actions/user-actions'
 import { getRoleBadgeColor } from '@/lib/user-utils'
 import { Input } from '@/components/ui/input'
 
@@ -39,8 +34,14 @@ interface UserAccordionProps {
 
 export function UserAccordion({ users }: UserAccordionProps) {
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null)
-  const [editUserId, setEditUserId] = useState<string | null>(null)
-  const [pwdUserId, setPwdUserId] = useState<string | null>(null)
+  // Removed editUserId & pwdUserId states; consolidated into inline basic edit
+  const [basicEditUserId, setBasicEditUserId] = useState<string | null>(null)
+  const [basicEditValues, setBasicEditValues] = useState<{
+    fullName: string
+    phone: string
+    role: string
+    password: string
+  }>({ fullName: '', phone: '', role: 'ADMIN', password: '' })
 
   const toggleUserExpansion = (userId: string) => {
     setExpandedUserId(expandedUserId === userId ? null : userId)
@@ -125,44 +126,181 @@ export function UserAccordion({ users }: UserAccordionProps) {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       <Card>
                         <CardHeader className="pb-3">
-                          <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Basic Information
+                          <CardTitle className="text-sm font-medium flex justify-between items-center text-muted-foreground">
+                            <span>Basic Information</span>
+                            {basicEditUserId === userProfile.id ? (
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  size={'sm'}
+                                  variant={'link'}
+                                  className="hover:text-blue-600 dark:hover:text-blue-300"
+                                  form={`basic-info-form-${userProfile.id}`}
+                                  type="submit"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  Save
+                                </Button>
+                                <Button
+                                  size={'sm'}
+                                  variant={'link'}
+                                  className="text-muted-foreground/70 hover:text-destructive"
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setBasicEditUserId(null)
+                                  }}
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button
+                                size={'sm'}
+                                variant={'link'}
+                                className="hover:text-blue-600 dark:hover:text-blue-300"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setBasicEditUserId(userProfile.id)
+                                  setBasicEditValues({
+                                    fullName: userProfile.name,
+                                    phone: userProfile.phone || '',
+                                    role: userProfile.role.toUpperCase(),
+                                    password: '',
+                                  })
+                                }}
+                              >
+                                Edit
+                              </Button>
+                            )}
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                          <div>
-                            <Label className="text-xs font-medium text-muted-foreground">
-                              Full Name
-                            </Label>
-                            <p className="text-sm font-medium text-foreground">
-                              {userProfile.name}
-                            </p>
-                          </div>
-                          <div>
-                            <Label className="text-xs font-medium text-muted-foreground">
-                              Email Address
-                            </Label>
-                            <p className="text-sm text-foreground/90">{userProfile.email}</p>
-                          </div>
-                          <div>
-                            <Label className="text-xs font-medium text-muted-foreground">
-                              Phone Number
-                            </Label>
-                            <p className="text-sm text-foreground/80">
-                              {userProfile.phone || 'Not provided'}
-                            </p>
-                          </div>
-                          <div>
-                            <Label className="text-xs font-medium text-muted-foreground">
-                              User Role
-                            </Label>
-                            <div className="mt-1">
-                              <Badge className={getRoleBadgeColor(userProfile.role)}>
-                                {userProfile.role.charAt(0).toUpperCase() +
-                                  userProfile.role.slice(1)}
-                              </Badge>
-                            </div>
-                          </div>
+                          {basicEditUserId === userProfile.id ? (
+                            <form
+                              id={`basic-info-form-${userProfile.id}`}
+                              action={updateUserDetailsAction}
+                              onSubmit={() => {
+                                setBasicEditUserId(null)
+                              }}
+                              className="space-y-3"
+                            >
+                              <input type="hidden" name="userId" value={userProfile.id} />
+                              <div>
+                                <Label
+                                  className="text-xs font-medium text-muted-foreground"
+                                  htmlFor={`fullName-inline-${userProfile.id}`}
+                                >
+                                  Full Name
+                                </Label>
+                                <Input
+                                  id={`fullName-inline-${userProfile.id}`}
+                                  name="fullName"
+                                  value={basicEditValues.fullName}
+                                  onChange={(e) =>
+                                    setBasicEditValues((v) => ({ ...v, fullName: e.target.value }))
+                                  }
+                                  className="mt-1 h-8 text-sm"
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <Label
+                                  className="text-xs font-medium text-muted-foreground"
+                                  htmlFor={`phone-inline-${userProfile.id}`}
+                                >
+                                  Phone Number
+                                </Label>
+                                <Input
+                                  id={`phone-inline-${userProfile.id}`}
+                                  name="phone"
+                                  value={basicEditValues.phone}
+                                  onChange={(e) =>
+                                    setBasicEditValues((v) => ({ ...v, phone: e.target.value }))
+                                  }
+                                  className="mt-1 h-8 text-sm"
+                                />
+                              </div>
+                              <div>
+                                <Label
+                                  className="text-xs font-medium text-muted-foreground"
+                                  htmlFor={`role-inline-${userProfile.id}`}
+                                >
+                                  Role
+                                </Label>
+                                <select
+                                  id={`role-inline-${userProfile.id}`}
+                                  name="role"
+                                  value={basicEditValues.role}
+                                  onChange={(e) =>
+                                    setBasicEditValues((v) => ({ ...v, role: e.target.value }))
+                                  }
+                                  className="mt-1 h-8 text-sm rounded-md border bg-background px-2 focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                                >
+                                  <option value="ADMIN">Admin</option>
+                                  <option value="WORKER">Worker</option>
+                                  <option value="CLIENT">Client</option>
+                                </select>
+                              </div>
+                              <div>
+                                <Label
+                                  className="text-xs font-medium text-muted-foreground"
+                                  htmlFor={`password-inline-${userProfile.id}`}
+                                >
+                                  Set New Password (optional)
+                                </Label>
+                                <Input
+                                  id={`password-inline-${userProfile.id}`}
+                                  name="password"
+                                  type="password"
+                                  value={basicEditValues.password}
+                                  onChange={(e) =>
+                                    setBasicEditValues((v) => ({ ...v, password: e.target.value }))
+                                  }
+                                  placeholder="Leave blank to keep current"
+                                  className="mt-1 h-8 text-sm"
+                                />
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                  Min 8 chars, include numbers & symbols.
+                                </p>
+                              </div>
+                            </form>
+                          ) : (
+                            <>
+                              <div>
+                                <Label className="text-xs font-medium text-muted-foreground">
+                                  Full Name
+                                </Label>
+                                <p className="text-sm font-medium text-foreground">
+                                  {userProfile.name}
+                                </p>
+                              </div>
+                              <div>
+                                <Label className="text-xs font-medium text-muted-foreground">
+                                  Email Address
+                                </Label>
+                                <p className="text-sm text-foreground/90">{userProfile.email}</p>
+                              </div>
+                              <div>
+                                <Label className="text-xs font-medium text-muted-foreground">
+                                  Phone Number
+                                </Label>
+                                <p className="text-sm text-foreground/80">
+                                  {userProfile.phone || 'Not provided'}
+                                </p>
+                              </div>
+                              <div>
+                                <Label className="text-xs font-medium text-muted-foreground">
+                                  User Role
+                                </Label>
+                                <div className="mt-1">
+                                  <Badge className={getRoleBadgeColor(userProfile.role)}>
+                                    {userProfile.role.charAt(0).toUpperCase() +
+                                      userProfile.role.slice(1)}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </>
+                          )}
                         </CardContent>
                       </Card>
 
@@ -239,268 +377,7 @@ export function UserAccordion({ users }: UserAccordionProps) {
                       </Card>
                     </div>
 
-                    <div className="flex flex-wrap gap-3 pt-4 border-t border-border">
-                      {/* Edit Profile Toggle */}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        type="button"
-                        className="flex items-center gap-2"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setEditUserId(editUserId === userProfile.id ? null : userProfile.id)
-                        }}
-                      >
-                        <UserCheck className="w-4 h-4" />{' '}
-                        {editUserId === userProfile.id ? 'Close Edit' : 'Edit Profile'}
-                      </Button>
-
-                      {/* Set Password Toggle */}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setPwdUserId(pwdUserId === userProfile.id ? null : userProfile.id)
-                        }}
-                      >
-                        {pwdUserId === userProfile.id ? 'Close Password' : 'Set Password'}
-                      </Button>
-
-                      {/* Existing server-side email form */}
-                      <form
-                        action={sendWelcomeEmailAction}
-                        className="flex items-center"
-                        onClick={(e) => e.stopPropagation()}
-                        onMouseDown={(e) => e.stopPropagation()}
-                      >
-                        <input type="hidden" name="email" value={userProfile.email} />
-                        <input type="hidden" name="name" value={userProfile.name} />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          type="submit"
-                          className="flex items-center gap-2"
-                        >
-                          <Mail className="w-4 h-4" /> Send Email
-                        </Button>
-                      </form>
-
-                      {/* Temp password generation */}
-                      {userProfile.role !== 'admin' && (
-                        <form
-                          action={resetPasswordAction}
-                          className="flex items-center"
-                          onClick={(e) => e.stopPropagation()}
-                          onMouseDown={(e) => e.stopPropagation()}
-                        >
-                          <input type="hidden" name="userId" value={userProfile.id} />
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            type="submit"
-                            className="text-orange-600 hover:text-orange-700"
-                          >
-                            Temp Password
-                          </Button>
-                        </form>
-                      )}
-
-                      {/* Edit Form Panel */}
-                      {editUserId === userProfile.id && (
-                        <div
-                          className="basis-full w-full rounded-lg border border-border/70 bg-gradient-to-br from-accent/40 via-background to-background dark:from-accent/10 backdrop-blur-sm shadow-sm ring-1 ring-border/40 p-5 space-y-5 animate-in fade-in slide-in-from-top-2"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center">
-                                <UserCheck className="h-4 w-4 text-primary" />
-                              </div>
-                              <div>
-                                <h4 className="text-sm font-semibold leading-tight">
-                                  Update Profile
-                                </h4>
-                                <p className="text-xs text-muted-foreground">
-                                  Modify basic user details
-                                </p>
-                              </div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setEditUserId(null)
-                              }}
-                              className="text-xs"
-                            >
-                              Close
-                            </Button>
-                          </div>
-                          <form
-                            action={updateUserDetailsAction}
-                            className="space-y-4"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <input type="hidden" name="userId" value={userProfile.id} />
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              <div className="space-y-1.5">
-                                <Label
-                                  htmlFor={`fullName-${userProfile.id}`}
-                                  className="text-xs uppercase tracking-wide text-muted-foreground"
-                                >
-                                  Full Name
-                                </Label>
-                                <Input
-                                  id={`fullName-${userProfile.id}`}
-                                  name="fullName"
-                                  defaultValue={userProfile.name}
-                                  className="h-8 text-sm"
-                                />
-                              </div>
-                              <div className="space-y-1.5">
-                                <Label
-                                  htmlFor={`phone-${userProfile.id}`}
-                                  className="text-xs uppercase tracking-wide text-muted-foreground"
-                                >
-                                  Phone
-                                </Label>
-                                <Input
-                                  id={`phone-${userProfile.id}`}
-                                  name="phone"
-                                  defaultValue={userProfile.phone}
-                                  className="h-8 text-sm"
-                                />
-                              </div>
-                              <div className="space-y-1.5">
-                                <Label
-                                  htmlFor={`role-${userProfile.id}`}
-                                  className="text-xs uppercase tracking-wide text-muted-foreground"
-                                >
-                                  Role
-                                </Label>
-                                <select
-                                  id={`role-${userProfile.id}`}
-                                  name="role"
-                                  defaultValue={userProfile.role.toUpperCase()}
-                                  className="h-8 text-sm rounded-md border bg-background px-2 focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                                >
-                                  <option value="ADMIN">Admin</option>
-                                  <option value="WORKER">Worker</option>
-                                  <option value="CLIENT">Client</option>
-                                </select>
-                              </div>
-                            </div>
-                            <div className="flex flex-wrap gap-2 pt-1">
-                              <Button type="submit" size="sm" className="gap-1">
-                                Save Changes
-                              </Button>
-                              <Button
-                                type="reset"
-                                variant="outline"
-                                size="sm"
-                                className="gap-1"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                }}
-                              >
-                                Reset
-                              </Button>
-                            </div>
-                          </form>
-                        </div>
-                      )}
-
-                      {/* Set Password Panel */}
-                      {pwdUserId === userProfile.id && (
-                        <div
-                          className="basis-full w-full rounded-lg border border-border/70 bg-gradient-to-br from-primary/5 via-background to-background dark:from-primary/10 backdrop-blur-sm shadow-sm ring-1 ring-border/40 p-5 space-y-5 animate-in fade-in slide-in-from-top-2"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center">
-                                <KeyRound className="h-4 w-4 text-primary" />
-                              </div>
-                              <div>
-                                <h4 className="text-sm font-semibold leading-tight">
-                                  Set Password
-                                </h4>
-                                <p className="text-xs text-muted-foreground">
-                                  Manually override user password
-                                </p>
-                              </div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setPwdUserId(null)
-                              }}
-                              className="text-xs"
-                            >
-                              Close
-                            </Button>
-                          </div>
-                          <form
-                            action={setUserPasswordAction}
-                            className="space-y-4"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <input type="hidden" name="userId" value={userProfile.id} />
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              <div className="space-y-1.5 md:col-span-2">
-                                <Label
-                                  htmlFor={`password-${userProfile.id}`}
-                                  className="text-xs uppercase tracking-wide text-muted-foreground"
-                                >
-                                  New Password
-                                </Label>
-                                <Input
-                                  id={`password-${userProfile.id}`}
-                                  name="password"
-                                  type="password"
-                                  placeholder="Enter new password"
-                                  required
-                                  className="h-8 text-sm"
-                                />
-                              </div>
-                              <div className="space-y-1.5">
-                                <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-                                  Guidelines
-                                </Label>
-                                <ul className="text-[10px] leading-relaxed text-muted-foreground list-disc pl-4 pr-2">
-                                  <li>Min 8 chars</li>
-                                  <li>Use numbers</li>
-                                  <li>Use symbols</li>
-                                </ul>
-                              </div>
-                            </div>
-                            <div className="flex flex-wrap gap-2 pt-1">
-                              <Button type="submit" size="sm" className="gap-1">
-                                Update Password
-                              </Button>
-                              <Button
-                                type="reset"
-                                variant="outline"
-                                size="sm"
-                                className="gap-1"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                }}
-                              >
-                                Clear
-                              </Button>
-                            </div>
-                          </form>
-                        </div>
-                      )}
-                    </div>
+                    {/* Removed bottom action buttons & panels now redundant */}
                   </div>
                 </TableCell>
               </TableRow>

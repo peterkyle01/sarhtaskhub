@@ -1,8 +1,8 @@
-import ClientsClient from './ClientsClient'
+import ClientsClient from './clients-client'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import type { Payload } from 'payload'
-import type { ClientItem, WorkerUser } from './ClientsClient'
+import type { ClientItem, WorkerUser } from './clients-client'
 
 interface GenericDoc {
   id: string | number

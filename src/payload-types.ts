@@ -64,12 +64,15 @@ export type SupportedTimezones =
 export interface Config {
   auth: {
     users: UserAuthOperations;
+    workers: WorkerAuthOperations;
   };
   blocks: {};
   collections: {
     users: User;
     media: Media;
     clients: Client;
+    workers: Worker;
+    tasks: Task;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
@@ -79,6 +82,8 @@ export interface Config {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     clients: ClientsSelect<false> | ClientsSelect<true>;
+    workers: WorkersSelect<false> | WorkersSelect<true>;
+    tasks: TasksSelect<false> | TasksSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
@@ -89,15 +94,37 @@ export interface Config {
   globals: {};
   globalsSelect: {};
   locale: null;
-  user: User & {
-    collection: 'users';
-  };
+  user:
+    | (User & {
+        collection: 'users';
+      })
+    | (Worker & {
+        collection: 'workers';
+      });
   jobs: {
     tasks: unknown;
     workflows: unknown;
   };
 }
 export interface UserAuthOperations {
+  forgotPassword: {
+    email: string;
+    password: string;
+  };
+  login: {
+    email: string;
+    password: string;
+  };
+  registerFirstUser: {
+    email: string;
+    password: string;
+  };
+  unlock: {
+    email: string;
+    password: string;
+  };
+}
+export interface WorkerAuthOperations {
   forgotPassword: {
     email: string;
     password: string;
@@ -176,7 +203,7 @@ export interface Media {
 export interface Client {
   id: number;
   /**
-   * Auto-generated if left blank (e.g., CL12345)
+   * Auto-generated (e.g., CL12345)
    */
   clientId?: string | null;
   name: string;
@@ -188,6 +215,73 @@ export interface Client {
    * User with role WORKER
    */
   assignedWorker?: (number | null) | User;
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "workers".
+ */
+export interface Worker {
+  id: number;
+  /**
+   * Auto-generated (e.g., WK123456)
+   */
+  workerId?: string | null;
+  fullName: string;
+  tasksAssigned?: (number | Client)[] | null;
+  performance?: {
+    overallScore?: number | null;
+    tasksCompleted?: number | null;
+    averageCompletionTime?: number | null;
+    lastEvaluation?: string | null;
+    notes?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tasks".
+ */
+export interface Task {
+  id: number;
+  /**
+   * Auto-generated (e.g., TK123456)
+   */
+  taskId?: string | null;
+  /**
+   * Reference to the associated client
+   */
+  client: number | Client;
+  platform: 'Cengage' | 'ALEKS' | 'MATLAB';
+  taskType: 'Assignment' | 'Quiz' | 'Course';
+  dueDate: string;
+  status: 'Pending' | 'In Progress' | 'Completed';
+  /**
+   * Assigned worker (user with role WORKER)
+   */
+  worker?: (number | null) | User;
+  /**
+   * Score / grade if applicable
+   */
+  score?: number | null;
   notes?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -210,12 +304,25 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'clients';
         value: number | Client;
+      } | null)
+    | ({
+        relationTo: 'workers';
+        value: number | Worker;
+      } | null)
+    | ({
+        relationTo: 'tasks';
+        value: number | Task;
       } | null);
   globalSlug?: string | null;
-  user: {
-    relationTo: 'users';
-    value: number | User;
-  };
+  user:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'workers';
+        value: number | Worker;
+      };
   updatedAt: string;
   createdAt: string;
 }
@@ -225,10 +332,15 @@ export interface PayloadLockedDocument {
  */
 export interface PayloadPreference {
   id: number;
-  user: {
-    relationTo: 'users';
-    value: number | User;
-  };
+  user:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'workers';
+        value: number | Worker;
+      };
   key?: string | null;
   value?:
     | {
@@ -310,6 +422,57 @@ export interface ClientsSelect<T extends boolean = true> {
   deadline?: T;
   progress?: T;
   assignedWorker?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "workers_select".
+ */
+export interface WorkersSelect<T extends boolean = true> {
+  workerId?: T;
+  fullName?: T;
+  tasksAssigned?: T;
+  performance?:
+    | T
+    | {
+        overallScore?: T;
+        tasksCompleted?: T;
+        averageCompletionTime?: T;
+        lastEvaluation?: T;
+        notes?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  email?: T;
+  resetPasswordToken?: T;
+  resetPasswordExpiration?: T;
+  salt?: T;
+  hash?: T;
+  loginAttempts?: T;
+  lockUntil?: T;
+  sessions?:
+    | T
+    | {
+        id?: T;
+        createdAt?: T;
+        expiresAt?: T;
+      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tasks_select".
+ */
+export interface TasksSelect<T extends boolean = true> {
+  taskId?: T;
+  client?: T;
+  platform?: T;
+  taskType?: T;
+  dueDate?: T;
+  status?: T;
+  worker?: T;
+  score?: T;
   notes?: T;
   updatedAt?: T;
   createdAt?: T;
