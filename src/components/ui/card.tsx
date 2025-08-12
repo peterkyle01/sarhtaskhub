@@ -7,13 +7,15 @@ interface CardProps extends React.ComponentProps<'div'> {
   padded?: boolean
 }
 
-function Card({ className, variant = 'default', padded = true, ...props }: CardProps) {
+function Card({ className, variant = 'gradient', padded = true, ...props }: CardProps) {
+  // Base keeps structural + interactive feel; variants supply surface style.
   const base =
-    'text-card-foreground flex flex-col gap-6 rounded-xl border shadow-sm transition-colors duration-300'
+    'text-card-foreground flex flex-col gap-6 rounded-xl shadow-sm transition-colors duration-300'
   const variants: Record<string, string> = {
-    default: 'bg-card',
+    // Provide a neutral / non-gradient fallback
+    default: 'bg-card border border-[var(--border)]',
     glass: 'glass-card',
-    gradient: 'card-gradient',
+    gradient: 'bg-[var(--card)] border border-[var(--border)] card-gradient',
   }
   return (
     <div

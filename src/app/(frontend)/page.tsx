@@ -91,7 +91,7 @@ export default function SignInPage() {
           <p className="text-muted-foreground text-sm">Professional task management platform</p>
         </div>
 
-        <Card className="shadow-2xl border-border/50 backdrop-blur-sm bg-card/95">
+        <Card className="shadow-2xl border-border/50">
           <CardHeader className="space-y-3 pb-6">
             <CardTitle className="text-2xl font-semibold tracking-tight text-center text-foreground">
               Welcome Back

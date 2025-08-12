@@ -97,7 +97,7 @@ export default function DashboardClient({
         </DropdownMenu>
       </div>
       <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-[var(--card)] border border-[var(--border)] card-gradient">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium">Total Clients</CardTitle>
             <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
@@ -107,7 +107,7 @@ export default function DashboardClient({
             <p className="text-[10px] sm:text-xs text-muted-foreground">Active in system</p>
           </CardContent>
         </Card>
-        <Card className="bg-[var(--card)] border border-[var(--border)] card-gradient">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium">Pending Tasks</CardTitle>
             <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
@@ -117,7 +117,7 @@ export default function DashboardClient({
             <p className="text-[10px] sm:text-xs text-muted-foreground">Awaiting completion</p>
           </CardContent>
         </Card>
-        <Card className="bg-[var(--card)] border border-[var(--border)] card-gradient">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium">Completed Tasks</CardTitle>
             <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
@@ -127,7 +127,7 @@ export default function DashboardClient({
             <p className="text-[10px] sm:text-xs text-muted-foreground">All time</p>
           </CardContent>
         </Card>
-        <Card className="bg-[var(--card)] border border-[var(--border)] card-gradient">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium">Deadlines This Week</CardTitle>
             <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
@@ -141,7 +141,7 @@ export default function DashboardClient({
         </Card>
       </div>
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2 bg-[var(--card)] border border-[var(--border)] overflow-hidden card-gradient">
+        <Card className="lg:col-span-2 overflow-hidden">
           <CardHeader>
             <CardTitle className="text-sm sm:text-base">Task Completion Overview</CardTitle>
             <CardDescription className="text-xs sm:text-sm">
@@ -176,7 +176,7 @@ export default function DashboardClient({
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-[var(--card)] border border-[var(--border)] overflow-hidden card-gradient">
+        <Card className="overflow-hidden">
           <CardHeader>
             <CardTitle className="text-sm sm:text-base">Client Distribution</CardTitle>
             <CardDescription className="text-xs sm:text-sm">
@@ -225,7 +225,7 @@ export default function DashboardClient({
           </CardContent>
         </Card>
       </div>
-      <Card className="bg-[var(--card)] border border-[var(--border)] card-gradient">
+      <Card>
         <CardHeader>
           <CardTitle className="text-sm sm:text-base">Recent Activity</CardTitle>
           <CardDescription className="text-xs sm:text-sm">
