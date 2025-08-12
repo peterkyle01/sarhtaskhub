@@ -163,6 +163,11 @@
   box-sizing: border-box;
   border-color: var(--border);
 }
+html {
+  /* Ensure baseline font smoothing on the root for all descendants */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 body {
   margin: 0;
   background:
@@ -172,7 +177,8 @@ body {
     linear-gradient(to bottom, hsl(210 40% 99%), hsl(210 40% 96%));
   background-attachment: fixed;
   color: var(--foreground);
-  -webkit-font-smoothing: antialiased;
+  -webkit-font-smoothing: antialiased; /* Safari / Chrome */
+  -moz-osx-font-smoothing: grayscale; /* Firefox on macOS */
   text-rendering: optimizeLegibility;
 }
 .dark body {

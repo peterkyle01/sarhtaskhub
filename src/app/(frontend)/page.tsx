@@ -20,7 +20,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Eye, EyeOff, Loader2, FileText } from 'lucide-react'
+import { Eye, EyeOff, Loader2, ServerCog } from 'lucide-react'
 import Link from 'next/link'
 import { ThemeToggle } from '@/components/custom/theme-toggle'
 
@@ -83,8 +83,8 @@ export default function SignInPage() {
         {/* Logo/Branding Section */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-xl">
-              <FileText className="h-8 w-8" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-xl ring-1 ring-inset ring-primary/20">
+              <ServerCog className="h-8 w-8" />
             </div>
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">Sarh Task Hub</h1>
@@ -179,7 +179,9 @@ export default function SignInPage() {
                 <Button
                   type="submit"
                   disabled={pending}
-                  className="w-full h-11 font-medium bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2"
+                  className="w-full h-11 font-semibold flex items-center justify-center gap-2 relative overflow-hidden rounded-md bg-primary text-primary-foreground shadow-md hover:shadow-lg transition-all duration-200 focus-visible:ring-ring/50 focus-visible:ring-[3px]
+                  before:content-[''] before:absolute before:inset-0 before:rounded-md before:ring-[0.5px] before:ring-inset before:ring-transparent hover:before:ring-primary/20 focus-visible:before:ring-primary/25 dark:hover:before:ring-primary/15 dark:focus-visible:before:ring-primary/20 before:transition-colors before:duration-300 before:pointer-events-none
+                  after:content-[''] after:absolute after:top-0 after:inset-x-0 after:h-px after:bg-gradient-to-r after:from-white/30 after:via-white/40 after:to-white/30 dark:after:from-white/12 dark:after:via-white/18 dark:after:to-white/12 after:pointer-events-none"
                 >
                   {pending && <Loader2 className="h-4 w-4 animate-spin" />}
                   {pending ? 'Signing In...' : 'Sign In'}
