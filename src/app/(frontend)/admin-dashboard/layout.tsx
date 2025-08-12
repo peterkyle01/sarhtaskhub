@@ -19,7 +19,7 @@ import {
 import { FileText, Home, Users, UserCheck, BarChart3 } from 'lucide-react'
 import type { Config } from '@/payload-types'
 import { ThemeToggle } from '@/components/custom/theme-toggle'
-import { LogoutButton } from './logout-button'
+import { LogoutButton } from '../../../components/custom/logout-button'
 import { getCurrentUser } from '@/server-actions/user-actions'
 import Link from 'next/link'
 
