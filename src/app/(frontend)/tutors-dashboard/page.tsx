@@ -148,7 +148,7 @@ export default function TutorDashboard() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3 min-w-0">
         {/* Tasks List */}
         <Card className="lg:col-span-2 rounded-xl sm:rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)]">
           <CardHeader className="pb-2 sm:pb-3 p-4 sm:p-6">
@@ -213,17 +213,17 @@ export default function TutorDashboard() {
         </Card>
 
         {/* Progress Chart */}
-        <Card className="rounded-xl sm:rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)]">
+        <Card className="rounded-xl sm:rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)] min-w-0">
           <CardHeader className="p-4 sm:p-6">
             <CardTitle className="text-base sm:text-lg">Progress</CardTitle>
             <CardDescription className="text-xs sm:text-sm">Completed vs Pending</CardDescription>
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-0">
-            <div className="flex items-center justify-center">
-              <div className="relative">
+            <div className="flex items-center justify-center w-full">
+              <div className="relative w-full flex items-center justify-center max-w-[240px] mx-auto">
                 <ChartContainer
                   config={progressChartConfig}
-                  className="h-[180px] w-[180px] sm:h-[220px] sm:w-[220px] flex items-center justify-center"
+                  className="h-[160px] w-[160px] xs:h-[180px] xs:w-[180px] sm:h-[220px] sm:w-[220px] flex items-center justify-center"
                 >
                   <PieChart>
                     <Pie

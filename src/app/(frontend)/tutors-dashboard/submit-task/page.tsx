@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -21,60 +21,21 @@ import {
 import { cn } from '@/lib/utils'
 
 // Types
+import { listAssignedTasksForCurrentWorker } from '@/server-actions/worker-actions'
+import { updateTaskStatus } from '@/server-actions/tasks-actions'
+
 interface AssignedTask {
-  id: string
+  id: number
   clientName: string
   courseName: string
   taskType: string
-  status: string
-  dueDate: string
-  priority: string
-  description: string
+  platform: string
+  dueTime: string // ISO full datetime
+  dueDate: string // derived date part
+  status: 'Completed' | 'In Progress' | 'Pending'
+  priority: 'high' | 'medium' | 'low'
+  estimatedTime: string
 }
-
-// Mock tasks assigned to the worker
-const mockAssignedTasks: AssignedTask[] = [
-  {
-    id: 'TSK001',
-    clientName: 'John Smith',
-    courseName: 'Calculus I',
-    taskType: 'Quiz',
-    status: 'In Progress',
-    dueDate: '2025-08-15',
-    priority: 'high',
-    description: 'Chapter 5 calculus quiz - needs completion by Friday',
-  },
-  {
-    id: 'TSK004',
-    clientName: 'Sarah Davis',
-    courseName: 'Algebra',
-    taskType: 'Assignment',
-    status: 'Pending',
-    dueDate: '2025-08-20',
-    priority: 'medium',
-    description: 'Algebra fundamentals homework',
-  },
-  {
-    id: 'TSK007',
-    clientName: 'Mike Johnson',
-    courseName: 'Statistics',
-    taskType: 'Quiz',
-    status: 'Pending',
-    dueDate: '2025-08-18',
-    priority: 'medium',
-    description: 'Statistics chapter 3 quiz',
-  },
-  {
-    id: 'TSK009',
-    clientName: 'Emma Brown',
-    courseName: 'Physics II',
-    taskType: 'Course',
-    status: 'In Progress',
-    dueDate: '2025-08-25',
-    priority: 'low',
-    description: 'Physics course final project',
-  },
-]
 
 const formSchema = z
   .object({
@@ -148,6 +109,43 @@ function getDaysUntilDue(dueDate: string) {
 export default function SubmitTaskPage() {
   const [submissionSuccess, setSubmissionSuccess] = useState(false)
   const [selectedTaskDetails, setSelectedTaskDetails] = useState<AssignedTask | null>(null)
+  const [tasks, setTasks] = useState<AssignedTask[]>([])
+  const [loadingTasks, setLoadingTasks] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    async function load() {
+      try {
+        const data = await listAssignedTasksForCurrentWorker()
+        type RawTask = {
+          id: number
+          clientName: string
+          courseName: string
+          taskType: string
+          platform: string
+          dueTime: string
+          status: 'Completed' | 'In Progress' | 'Pending'
+          priority: 'high' | 'medium' | 'low'
+          estimatedTime: string
+        }
+        if (active) {
+          const mapped = (data as RawTask[]).map((d) => ({
+            ...d,
+            dueDate: d.dueTime ? d.dueTime.split('T')[0] : '',
+          }))
+          setTasks(mapped)
+        }
+      } catch (e) {
+        console.error('Failed to load assigned tasks', e)
+      } finally {
+        if (active) setLoadingTasks(false)
+      }
+    }
+    load()
+    return () => {
+      active = false
+    }
+  }, [])
 
   const form = useForm<SubmissionFormValues>({
     resolver: zodResolver(formSchema),
@@ -174,18 +172,43 @@ export default function SubmitTaskPage() {
   // Update task details when task is selected
   const handleTaskSelect = (taskId: string) => {
     setValue('taskId', taskId)
-    const task = mockAssignedTasks.find((t) => t.id === taskId)
+    const task = tasks.find((t) => String(t.id) === taskId || t.id === Number(taskId))
     setSelectedTaskDetails(task || null)
   }
 
   const onSubmit = async (data: SubmissionFormValues) => {
-    console.log('Form data submitted:', data)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-    setSubmissionSuccess(true)
-    reset() // Reset form after successful submission
-    setSelectedTaskDetails(null)
-    setTimeout(() => setSubmissionSuccess(false), 5000) // Hide success message after 5 seconds
+    const taskIdNum = Number(data.taskId)
+    if (!taskIdNum) return
+    try {
+      await updateTaskStatus(taskIdNum, data.status, {
+        score: data.score ? Number(data.score) : undefined,
+        notes: data.notes || undefined,
+      })
+      setSubmissionSuccess(true)
+      // Refresh tasks list
+      const refreshed = await listAssignedTasksForCurrentWorker()
+      type RawTask = {
+        id: number
+        clientName: string
+        courseName: string
+        taskType: string
+        platform: string
+        dueTime: string
+        status: 'Completed' | 'In Progress' | 'Pending'
+        priority: 'high' | 'medium' | 'low'
+        estimatedTime: string
+      }
+      const mapped = (refreshed as RawTask[]).map((d) => ({
+        ...d,
+        dueDate: d.dueTime ? d.dueTime.split('T')[0] : '',
+      }))
+      setTasks(mapped)
+      reset()
+      setSelectedTaskDetails(null)
+      setTimeout(() => setSubmissionSuccess(false), 5000)
+    } catch (e) {
+      console.error('Failed to submit task update', e)
+    }
   }
 
   return (
@@ -202,21 +225,21 @@ export default function SubmitTaskPage() {
           <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm">
             <span className="flex items-center gap-1 opacity-90">
               <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              {mockAssignedTasks.length} Assigned Tasks
+              {tasks.length} Assigned Tasks
             </span>
             <span className="flex items-center gap-1 opacity-90">
               <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              {mockAssignedTasks.filter((t) => t.status === 'In Progress').length} In Progress
+              {tasks.filter((t) => t.status === 'In Progress').length} In Progress
             </span>
             <span className="flex items-center gap-1 opacity-90">
               <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              {mockAssignedTasks.filter((t) => t.status === 'Completed').length} Completed
+              {tasks.filter((t) => t.status === 'Completed').length} Completed
             </span>
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3 min-w-0">
         {/* Task Submission Form */}
         <Card className="lg:col-span-2 rounded-xl sm:rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)]">
           <CardHeader className="p-4 sm:p-6">
@@ -247,11 +270,17 @@ export default function SubmitTaskPage() {
                     <SelectValue placeholder="Choose a task to update" />
                   </SelectTrigger>
                   <SelectContent>
-                    {mockAssignedTasks.map((task) => (
-                      <SelectItem key={task.id} value={task.id}>
-                        {task.id} - {task.clientName} ({task.courseName})
+                    {loadingTasks && (
+                      <SelectItem value="__loading" disabled>
+                        Loading...
                       </SelectItem>
-                    ))}
+                    )}
+                    {!loadingTasks &&
+                      tasks.map((task) => (
+                        <SelectItem key={task.id} value={String(task.id)}>
+                          {task.id} - {task.clientName} ({task.courseName})
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
                 {errors.taskId && (
@@ -373,7 +402,7 @@ export default function SubmitTaskPage() {
         </Card>
 
         {/* Task Details & Quick Actions */}
-        <div className="space-y-4 sm:space-y-6">
+        <div className="space-y-4 sm:space-y-6 min-w-0">
           {/* Selected Task Details */}
           {selectedTaskDetails && (
             <Card className="rounded-xl sm:rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)]">
@@ -393,15 +422,6 @@ export default function SubmitTaskPage() {
                 <div className="flex items-center gap-2">
                   {getStatusBadge(selectedTaskDetails.status)}
                   {getPriorityBadge(selectedTaskDetails.priority)}
-                </div>
-
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs sm:text-sm text-gray-700 mb-2">
-                    <strong>Description:</strong>
-                  </p>
-                  <p className="text-xs sm:text-sm text-gray-600">
-                    {selectedTaskDetails.description}
-                  </p>
                 </div>
 
                 <div className="flex items-center justify-between text-xs sm:text-sm">
@@ -433,20 +453,20 @@ export default function SubmitTaskPage() {
               <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <div className="text-center p-3 bg-blue-50 rounded-lg">
                   <div className="text-lg sm:text-2xl font-bold text-blue-600">
-                    {mockAssignedTasks.filter((t) => t.status === 'In Progress').length}
+                    {tasks.filter((t) => t.status === 'In Progress').length}
                   </div>
                   <div className="text-[10px] sm:text-xs text-blue-600">In Progress</div>
                 </div>
                 <div className="text-center p-3 bg-yellow-50 rounded-lg">
                   <div className="text-lg sm:text-2xl font-bold text-yellow-600">
-                    {mockAssignedTasks.filter((t) => t.status === 'Pending').length}
+                    {tasks.filter((t) => t.status === 'Pending').length}
                   </div>
                   <div className="text-[10px] sm:text-xs text-yellow-600">Pending</div>
                 </div>
               </div>
 
               {/* Urgent Tasks Alert */}
-              {mockAssignedTasks.some(
+              {tasks.some(
                 (task) =>
                   getDaysUntilDue(task.dueDate).text.includes('overdue') ||
                   getDaysUntilDue(task.dueDate).text.includes('today'),

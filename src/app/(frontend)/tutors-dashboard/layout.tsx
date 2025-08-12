@@ -36,9 +36,9 @@ export const fetchCache = 'force-no-store'
 type AppUser = Config['user']
 
 const navigationItems = [
-  { title: 'Dashboard', url: '/worker-dashboard', icon: Home },
-  { title: 'Assigned Clients', url: '/worker-dashboard/assigned-clients', icon: Users },
-  { title: 'Submit Task', url: '/worker-dashboard/submit-task', icon: Upload },
+  { title: 'Dashboard', url: '/tutors-dashboard', icon: Home },
+  { title: 'Assigned Clients', url: '/tutors-dashboard/assigned-clients', icon: Users },
+  { title: 'Submit Task', url: '/tutors-dashboard/submit-task', icon: Upload },
 ]
 
 function WorkerSidebar({ user }: { user: AppUser | null }) {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Search, Eye, Calendar, FileText, Users } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -23,24 +23,7 @@ import {
 } from '@/components/ui/select'
 
 // Types
-interface Client {
-  id: string
-  name: string
-  avatar: string
-  platform: string
-  courseName: string
-  joinDate: string
-  tasks: {
-    total: number
-    completed: number
-    inProgress: number
-    pending: number
-    overdue: number
-  }
-  nextDeadline: string | null
-  priority: string
-  lastActivity: string
-}
+// (Legacy Client interface removed; using AssignedClientSummary from server actions)
 
 interface _ClientTask {
   id: string
@@ -52,130 +35,14 @@ interface _ClientTask {
   completedDate: string | null
 }
 
-// Mock assigned clients data for worker
-const assignedClients = [
-  {
-    id: 'CL001',
-    name: 'John Smith',
-    avatar: '/placeholder.svg?height=40&width=40',
-    platform: 'Cengage',
-    courseName: 'Calculus I',
-    joinDate: '2024-01-15',
-    tasks: {
-      total: 8,
-      completed: 5,
-      inProgress: 2,
-      pending: 1,
-      overdue: 0,
-    },
-    nextDeadline: '2024-02-15',
-    priority: 'medium',
-    lastActivity: '2 hours ago',
-  },
-  {
-    id: 'CL002',
-    name: 'Emily Johnson',
-    avatar: '/placeholder.svg?height=40&width=40',
-    platform: 'ALEKS',
-    courseName: 'Statistics',
-    joinDate: '2024-01-20',
-    tasks: {
-      total: 6,
-      completed: 6,
-      inProgress: 0,
-      pending: 0,
-      overdue: 0,
-    },
-    nextDeadline: null,
-    priority: 'low',
-    lastActivity: '1 day ago',
-  },
-  {
-    id: 'CL003',
-    name: 'Sarah Davis',
-    avatar: '/placeholder.svg?height=40&width=40',
-    platform: 'ALEKS',
-    courseName: 'Algebra',
-    joinDate: '2024-01-10',
-    tasks: {
-      total: 12,
-      completed: 7,
-      inProgress: 3,
-      pending: 1,
-      overdue: 1,
-    },
-    nextDeadline: '2024-02-08',
-    priority: 'high',
-    lastActivity: '30 minutes ago',
-  },
-  {
-    id: 'CL004',
-    name: 'David Wilson',
-    avatar: '/placeholder.svg?height=40&width=40',
-    platform: 'Cengage',
-    courseName: 'Chemistry',
-    joinDate: '2024-01-25',
-    tasks: {
-      total: 4,
-      completed: 2,
-      inProgress: 2,
-      pending: 0,
-      overdue: 0,
-    },
-    nextDeadline: '2024-02-12',
-    priority: 'medium',
-    lastActivity: '4 hours ago',
-  },
-  {
-    id: 'CL005',
-    name: 'Jessica Miller',
-    avatar: '/placeholder.svg?height=40&width=40',
-    platform: 'ALEKS',
-    courseName: 'Geometry',
-    joinDate: '2024-02-01',
-    tasks: {
-      total: 10,
-      completed: 4,
-      inProgress: 4,
-      pending: 2,
-      overdue: 0,
-    },
-    nextDeadline: '2024-02-18',
-    priority: 'medium',
-    lastActivity: '1 hour ago',
-  },
-]
+// Data now fetched from server actions
 
-// Mock detailed tasks for modal
-const mockClientTasks = [
-  {
-    id: 'TSK001',
-    title: 'Chapter 5 Quiz',
-    type: 'Quiz',
-    status: 'Completed',
-    dueDate: '2024-02-05',
-    score: 95,
-    completedDate: '2024-02-04',
-  },
-  {
-    id: 'TSK002',
-    title: 'Homework Assignment 3',
-    type: 'Assignment',
-    status: 'In Progress',
-    dueDate: '2024-02-15',
-    score: null,
-    completedDate: null,
-  },
-  {
-    id: 'TSK003',
-    title: 'Midterm Preparation',
-    type: 'Course',
-    status: 'Pending',
-    dueDate: '2024-02-20',
-    score: null,
-    completedDate: null,
-  },
-]
+import {
+  listAssignedClientsForCurrentWorker,
+  listClientTasksForWorker,
+  type AssignedClientSummary,
+  type ClientTaskItem,
+} from '@/server-actions/worker-actions'
 
 function getPlatformBadge(platform: string) {
   const colors: Record<string, string> = {
@@ -243,11 +110,32 @@ export default function AssignedClientsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [platformFilter, setPlatformFilter] = useState('all')
   const [priorityFilter, setPriorityFilter] = useState('all')
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null)
+  const [selectedClient, setSelectedClient] = useState<AssignedClientSummary | null>(null)
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false)
+  const [clients, setClients] = useState<AssignedClientSummary[]>([])
+  const [clientTasks, setClientTasks] = useState<ClientTaskItem[]>([])
+  const [tasksLoading, setTasksLoading] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    async function load() {
+      try {
+        const data = await listAssignedClientsForCurrentWorker()
+        if (active) setClients(data)
+      } catch (e) {
+        console.error('Failed to load assigned clients', e)
+      } finally {
+        // no-op (loading state removed)
+      }
+    }
+    load()
+    return () => {
+      active = false
+    }
+  }, [])
 
   // Filter clients based on search and filters
-  const filteredClients = assignedClients.filter((client) => {
+  const filteredClients = clients.filter((client) => {
     const matchesSearch =
       client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.courseName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -258,16 +146,28 @@ export default function AssignedClientsPage() {
     return matchesSearch && matchesPlatform && matchesPriority
   })
 
-  const handleViewTasks = (client: Client) => {
+  const handleViewTasks = async (client: AssignedClientSummary) => {
     setSelectedClient(client)
     setIsTaskModalOpen(true)
+    setTasksLoading(true)
+    try {
+      const tasks = await listClientTasksForWorker(client.id)
+      setClientTasks(tasks)
+    } catch (e) {
+      console.error('Failed to load client tasks', e)
+      setClientTasks([])
+    } finally {
+      setTasksLoading(false)
+    }
   }
 
-  const totalClients = assignedClients.length
-  const activeClients = assignedClients.filter(
-    (c) => c.tasks.inProgress > 0 || c.tasks.pending > 0,
+  const totalClients = clients.length
+  const activeClients = clients.filter(
+    (c) => c.taskCounts.inProgress > 0 || c.taskCounts.pending > 0,
   ).length
-  const completedClients = assignedClients.filter((c) => c.tasks.total === c.tasks.completed).length
+  const completedClients = clients.filter(
+    (c) => c.taskCounts.total === c.taskCounts.completed,
+  ).length
 
   return (
     <div className="flex-1 space-y-4 sm:space-y-6">
@@ -300,8 +200,8 @@ export default function AssignedClientsPage() {
       {/* Filters Section */}
       <Card className="rounded-xl sm:rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)]">
         <CardContent className="p-4">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="relative flex-1 min-w-[250px]">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 sm:gap-4">
+            <div className="relative flex-1 min-w-[200px] w-full">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search clients..."
@@ -311,7 +211,7 @@ export default function AssignedClientsPage() {
               />
             </div>
             <Select value={platformFilter} onValueChange={setPlatformFilter}>
-              <SelectTrigger className="w-[140px] rounded-xl border-gray-200">
+              <SelectTrigger className="w-full sm:w-[140px] rounded-xl border-gray-200">
                 <SelectValue placeholder="Platform" />
               </SelectTrigger>
               <SelectContent>
@@ -321,7 +221,7 @@ export default function AssignedClientsPage() {
               </SelectContent>
             </Select>
             <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-[140px] rounded-xl border-gray-200">
+              <SelectTrigger className="w-full sm:w-[140px] rounded-xl border-gray-200">
                 <SelectValue placeholder="Priority" />
               </SelectTrigger>
               <SelectContent>
@@ -336,7 +236,7 @@ export default function AssignedClientsPage() {
       </Card>
 
       {/* Clients Grid */}
-      <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3 min-w-0">
         {filteredClients.map((client) => (
           <Card
             key={client.id}
@@ -346,7 +246,7 @@ export default function AssignedClientsPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10 sm:h-12 sm:w-12 ring-2 ring-white shadow-md">
-                    <AvatarImage src={client.avatar || '/placeholder.svg'} alt={client.name} />
+                    <AvatarImage src={'/placeholder.svg'} alt={client.name} />
                     <AvatarFallback className="bg-gradient-to-br from-blue-400 to-purple-500 text-white font-semibold text-xs sm:text-sm">
                       {client.name
                         .split(' ')
@@ -390,14 +290,14 @@ export default function AssignedClientsPage() {
                     variant="outline"
                     className="rounded-full text-[10px] sm:text-xs bg-[var(--accent)] text-[var(--accent-foreground)]"
                   >
-                    {client.tasks.total} total
+                    {client.taskCounts.total} total
                   </Badge>
                 </div>
                 <div className="flex flex-wrap gap-1 sm:gap-2">
-                  {getStatusChip('completed', client.tasks.completed)}
-                  {getStatusChip('inProgress', client.tasks.inProgress)}
-                  {getStatusChip('pending', client.tasks.pending)}
-                  {getStatusChip('overdue', client.tasks.overdue)}
+                  {getStatusChip('completed', client.taskCounts.completed)}
+                  {getStatusChip('inProgress', client.taskCounts.inProgress)}
+                  {getStatusChip('pending', client.taskCounts.pending)}
+                  {getStatusChip('overdue', client.taskCounts.overdue)}
                 </div>
               </div>
 
@@ -446,10 +346,7 @@ export default function AssignedClientsPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
               <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
-                <AvatarImage
-                  src={selectedClient?.avatar || '/placeholder.svg'}
-                  alt={selectedClient?.name}
-                />
+                <AvatarImage src={'/placeholder.svg'} alt={selectedClient?.name} />
                 <AvatarFallback className="text-xs sm:text-sm">
                   {selectedClient?.name
                     .split(' ')
@@ -469,7 +366,11 @@ export default function AssignedClientsPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 sm:space-y-4 py-4">
-            {mockClientTasks.map((task) => (
+            {tasksLoading && <div className="text-xs sm:text-sm opacity-60">Loading tasks...</div>}
+            {!tasksLoading && clientTasks.length === 0 && (
+              <div className="text-xs sm:text-sm opacity-60">No tasks for this client.</div>
+            )}
+            {clientTasks.map((task) => (
               <Card key={task.id} className="rounded-lg sm:rounded-xl shadow-sm">
                 <CardContent className="p-3 sm:p-4">
                   <div className="flex items-center justify-between mb-2">
@@ -483,7 +384,7 @@ export default function AssignedClientsPage() {
                   </div>
                   <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
                     <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
-                    {task.score && (
+                    {task.score != null && (
                       <span className="font-medium text-green-600">Score: {task.score}%</span>
                     )}
                   </div>

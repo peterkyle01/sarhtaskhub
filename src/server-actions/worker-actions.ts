@@ -244,3 +244,254 @@ export async function getWorkerDashboardData(): Promise<WorkerDashboardData | nu
     return null
   }
 }
+
+// ------------------------------------------------------------
+// Additional worker-focused data helpers (replace mock data)
+// ------------------------------------------------------------
+
+export interface AssignedClientSummary {
+  id: number
+  name: string
+  platform: string
+  courseName: string
+  joinDate: string
+  taskCounts: {
+    total: number
+    completed: number
+    inProgress: number
+    pending: number
+    overdue: number
+  }
+  nextDeadline: string | null
+  priority: 'high' | 'medium' | 'low'
+  lastActivity: string
+}
+
+export interface ClientTaskItem {
+  id: number
+  taskId?: string
+  title: string
+  type: string
+  status: 'Pending' | 'In Progress' | 'Completed'
+  dueDate: string
+  score: number | null
+  completedDate: string | null
+  priority: 'high' | 'medium' | 'low'
+}
+
+function relativeTime(fromISO: string): string {
+  const then = new Date(fromISO).getTime()
+  const now = Date.now()
+  const diffMs = now - then
+  const diffMin = Math.floor(diffMs / 60000)
+  if (diffMin < 1) return 'just now'
+  if (diffMin < 60) return `${diffMin} min${diffMin === 1 ? '' : 's'} ago`
+  const diffHr = Math.floor(diffMin / 60)
+  if (diffHr < 24) return `${diffHr} hour${diffHr === 1 ? '' : 's'} ago`
+  const diffDay = Math.floor(diffHr / 24)
+  return `${diffDay} day${diffDay === 1 ? '' : 's'} ago`
+}
+
+function classifyDeadline(dueISO: string): 'high' | 'medium' | 'low' {
+  const now = Date.now()
+  const due = new Date(dueISO).getTime()
+  const hoursLeft = (due - now) / 36e5
+  if (hoursLeft < 24) return 'high'
+  if (hoursLeft < 72) return 'medium'
+  return 'low'
+}
+
+// List clients assigned to the current worker with aggregated task stats
+export async function listAssignedClientsForCurrentWorker(): Promise<AssignedClientSummary[]> {
+  try {
+    const user = await getCurrentUser()
+    if (!user || user.role !== 'WORKER') return []
+    const payload = await getPayload({ config })
+    // Fetch clients assigned to this worker
+    type ClientDoc = {
+      id: number
+      name?: string
+      clientId?: string
+      platform?: string
+      courseName?: string
+      createdAt: string
+      updatedAt: string
+    }
+    const clientsRes = await payload.find({
+      collection: 'clients',
+      where: { assignedWorker: { equals: user.id } },
+      limit: 300,
+      depth: 1,
+      sort: '-updatedAt',
+    })
+    if (!clientsRes.docs.length) return []
+    const clientIds = (clientsRes.docs as ClientDoc[]).map((c) => c.id)
+    // Fetch tasks for these clients assigned to this worker
+    type TaskDoc = {
+      id: number
+      client: number | ClientDoc
+      status: 'Pending' | 'In Progress' | 'Completed'
+      dueDate?: string
+      updatedAt: string
+    }
+    const tasksRes = await payload.find({
+      collection: 'tasks',
+      where: {
+        and: [{ client: { in: clientIds } }, { worker: { equals: user.id } }],
+      },
+      depth: 0,
+      limit: 1000,
+    })
+    const tasksByClient: Record<number, TaskDoc[]> = {}
+    for (const t of tasksRes.docs as TaskDoc[]) {
+      const cid = typeof t.client === 'number' ? t.client : (t.client as ClientDoc)?.id
+      if (!cid) continue
+      ;(tasksByClient[cid] ||= []).push(t)
+    }
+    const summaries: AssignedClientSummary[] = (clientsRes.docs as ClientDoc[]).map((c) => {
+      const tlist: TaskDoc[] = tasksByClient[c.id] || []
+      let completed = 0,
+        inProgress = 0,
+        pending = 0,
+        overdue = 0
+      let nextDeadline: string | null = null
+      for (const t of tlist) {
+        switch (t.status) {
+          case 'Completed':
+            completed++
+            break
+          case 'In Progress':
+            inProgress++
+            break
+          case 'Pending':
+            pending++
+            break
+        }
+        if (t.dueDate) {
+          const due = new Date(t.dueDate)
+          if (t.status !== 'Completed' && due.getTime() < Date.now()) {
+            overdue++
+          }
+          if (!nextDeadline || new Date(nextDeadline).getTime() > due.getTime()) {
+            nextDeadline = t.dueDate
+          }
+        }
+      }
+      // Determine priority from earliest active deadline & overdue
+      let priority: 'high' | 'medium' | 'low' = 'low'
+      if (overdue > 0) priority = 'high'
+      else if (nextDeadline) priority = classifyDeadline(nextDeadline)
+      return {
+        id: c.id,
+        name: c.name || c.clientId || `Client ${c.id}`,
+        platform: c.platform || 'Cengage',
+        courseName: c.courseName || 'Course',
+        joinDate: c.createdAt,
+        taskCounts: {
+          total: tlist.length,
+          completed,
+          inProgress,
+          pending,
+          overdue,
+        },
+        nextDeadline,
+        priority,
+        lastActivity: relativeTime(c.updatedAt),
+      }
+    })
+    return summaries
+  } catch (e) {
+    console.error('Failed to list assigned clients', e)
+    return []
+  }
+}
+
+// List tasks for a single client (for modal)
+export async function listClientTasksForWorker(clientId: number): Promise<ClientTaskItem[]> {
+  try {
+    const user = await getCurrentUser()
+    if (!user || user.role !== 'WORKER') return []
+    const payload = await getPayload({ config })
+    const tasksRes = await payload.find({
+      collection: 'tasks',
+      where: {
+        and: [{ client: { equals: clientId } }, { worker: { equals: user.id } }],
+      },
+      depth: 0,
+      limit: 200,
+      sort: '-dueDate',
+    })
+    type TaskDoc = {
+      id: number
+      taskId?: string
+      taskType: string
+      status: 'Pending' | 'In Progress' | 'Completed'
+      dueDate: string
+      score?: number | null
+      updatedAt: string
+    }
+    return (tasksRes.docs as TaskDoc[]).map((t) => ({
+      id: t.id,
+      taskId: t.taskId,
+      title: t.taskId || `Task ${t.id}`,
+      type: t.taskType,
+      status: t.status,
+      dueDate: t.dueDate,
+      score: t.score ?? null,
+      completedDate: t.status === 'Completed' ? t.updatedAt : null,
+      priority: classifyDeadline(t.dueDate),
+    }))
+  } catch (e) {
+    console.error('Failed to list client tasks for worker', e)
+    return []
+  }
+}
+
+// List all tasks for current worker (used in submit-task page)
+export async function listAssignedTasksForCurrentWorker(): Promise<DashboardTask[]> {
+  try {
+    const user = await getCurrentUser()
+    if (!user || user.role !== 'WORKER') return []
+    const payload = await getPayload({ config })
+    const tasksRes = await payload.find({
+      collection: 'tasks',
+      where: { worker: { equals: user.id } },
+      depth: 2,
+      limit: 500,
+      sort: '-dueDate',
+    })
+    const now = new Date()
+    type TaskDoc = {
+      id: number
+      taskType: string
+      platform: string
+      dueDate: string
+      status: 'Completed' | 'In Progress' | 'Pending'
+      client?: {
+        name?: string
+        courseName?: string
+      }
+    }
+    return (tasksRes.docs as TaskDoc[]).map((raw) => {
+      const due = raw.dueDate ? new Date(raw.dueDate) : now
+      return {
+        id: raw.id,
+        clientName:
+          typeof raw.client === 'object' && raw.client ? raw.client.name || 'Client' : 'Client',
+        courseName:
+          typeof raw.client === 'object' && raw.client
+            ? raw.client.courseName || 'Course'
+            : 'Course',
+        taskType: raw.taskType,
+        platform: raw.platform,
+        dueTime: due.toISOString(),
+        status: raw.status,
+        priority: classifyDeadline(due.toISOString()),
+        estimatedTime: '',
+      }
+    })
+  } catch (e) {
+    console.error('Failed to list assigned tasks for worker', e)
+    return []
+  }
+}

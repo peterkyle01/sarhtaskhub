@@ -24,7 +24,7 @@ import { Eye, EyeOff, Loader2, FileText } from 'lucide-react'
 import Link from 'next/link'
 import { ThemeToggle } from '@/components/custom/theme-toggle'
 
-type UserRole = 'ADMIN' | 'WORKER'
+type UserRole = 'ADMIN' | 'WORKER' | 'CLIENT'
 interface UserWithRole {
   role?: UserRole
 }
@@ -58,11 +58,14 @@ export default function SignInPage() {
         return
       }
       const role = (res.user as UserWithRole | undefined)?.role
-      if (role === 'ADMIN') {
-        router.push('/admin-dashboard')
-      } else {
-        router.push('/worker-dashboard')
+      // Explicit role to dashboard path mapping (WORKERs are Tutors in UI)
+      const roleToPath: Record<UserRole, string> = {
+        ADMIN: '/admin-dashboard',
+        WORKER: '/tutors-dashboard',
+        CLIENT: '/tutors-dashboard', // adjust if/when a dedicated client dashboard is added
       }
+      const target = role && roleToPath[role] ? roleToPath[role] : '/tutors-dashboard'
+      router.replace(target)
     })
   }
 
