@@ -21,7 +21,7 @@ export default async function WorkerDashboardLayout({ children }: { children: Re
       <AutoCollapseWrapper>
         <WorkerSidebar user={user} />
         <SidebarInset className="bg-[var(--background)] transition-colors min-h-screen">
-          <header className="sticky top-0 z-40 flex h-14 sm:h-16 shrink-0 items-center justify-between border-b bg-[var(--card)]/95 backdrop-blur supports-[backdrop-filter]:bg-[var(--card)]/80 border-[var(--border)] px-4 sm:px-6 transition-colors shadow-sm">
+          <header className="sticky top-0 z-40 flex h-14 sm:h-16 shrink-0 items-center justify-between border-b surface-gradient backdrop-blur supports-[backdrop-filter]:bg-[var(--card)]/80 border-[var(--border)] px-4 sm:px-6 transition-colors shadow-sm">
             <div className="flex items-center gap-2">
               <SidebarTrigger className="-ml-1 size-8 sm:size-7" />
               <div className="h-4 w-px bg-[var(--border)]" />

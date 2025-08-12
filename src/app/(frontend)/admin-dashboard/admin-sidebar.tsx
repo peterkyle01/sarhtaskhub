@@ -51,8 +51,8 @@ export function AdminSidebar({ user }: { user: AppUser | null }) {
   }
 
   return (
-    <Sidebar className="border-r border-border/40 bg-card/50 backdrop-blur-xl text-[var(--sidebar-foreground)] transition-all duration-300 shadow-lg">
-      <SidebarHeader className="border-b border-border/20 py-2 sm:py-3 px-2 sm:px-3">
+    <Sidebar className="border-r border-border/40 sidebar-gradient backdrop-blur-xl text-[var(--sidebar-foreground)] transition-all duration-300 shadow-lg">
+      <SidebarHeader className="border-b border-border/20 py-2 sm:py-3 px-2 sm:px-3 surface-gradient">
         <AppBrand panelLabel="Admin" />
       </SidebarHeader>
 
@@ -87,7 +87,7 @@ export function AdminSidebar({ user }: { user: AppUser | null }) {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-border/20 bg-card/30 backdrop-blur-sm">
+      <SidebarFooter className="border-t border-border/20 surface-gradient backdrop-blur-sm">
         <div className="p-2 sm:p-4 space-y-2 sm:space-y-4">
           <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl bg-background/50 border border-border/20 shadow-sm hover:shadow-md transition-all duration-200">
             <Avatar className="h-8 w-8 sm:h-10 sm:w-10 ring-2 ring-background shadow-md">
