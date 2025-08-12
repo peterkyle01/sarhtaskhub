@@ -70,12 +70,19 @@ type SubmissionFormValues = z.infer<typeof formSchema>
 
 function getStatusBadge(status: string) {
   const colors: Record<string, string> = {
-    Completed: 'bg-green-100 text-green-700',
-    'In Progress': 'bg-blue-100 text-blue-700',
-    Pending: 'bg-yellow-100 text-yellow-700',
+    Completed:
+      'bg-green-100 text-green-700 dark:bg-green-400/20 dark:text-green-300 dark:ring-1 dark:ring-green-400/30',
+    'In Progress':
+      'bg-blue-100 text-blue-700 dark:bg-blue-400/20 dark:text-blue-300 dark:ring-1 dark:ring-blue-400/30',
+    Pending:
+      'bg-yellow-100 text-yellow-700 dark:bg-amber-400/20 dark:text-amber-300 dark:ring-1 dark:ring-amber-400/30',
   }
   return (
-    <Badge className={`${colors[status] || 'bg-gray-100 text-gray-700'} text-xs rounded-full`}>
+    <Badge
+      className={`${
+        colors[status] || 'bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-muted-foreground'
+      } text-xs rounded-full`}
+    >
       {status}
     </Badge>
   )
@@ -83,12 +90,17 @@ function getStatusBadge(status: string) {
 
 function getPriorityBadge(priority: string) {
   const colors: Record<string, string> = {
-    high: 'bg-red-100 text-red-700',
-    medium: 'bg-amber-100 text-amber-700',
-    low: 'bg-emerald-100 text-emerald-700',
+    high: 'bg-red-100 text-red-700 dark:bg-red-400/20 dark:text-red-300 dark:ring-1 dark:ring-red-400/30',
+    medium:
+      'bg-amber-100 text-amber-700 dark:bg-amber-400/20 dark:text-amber-300 dark:ring-1 dark:ring-amber-400/30',
+    low: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-400/20 dark:text-emerald-300 dark:ring-1 dark:ring-emerald-400/30',
   }
   return (
-    <Badge className={`${colors[priority] || 'bg-gray-100 text-gray-700'} text-xs rounded-full`}>
+    <Badge
+      className={`${
+        colors[priority] || 'bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-muted-foreground'
+      } text-xs rounded-full`}
+    >
       {priority}
     </Badge>
   )
@@ -100,9 +112,10 @@ function getDaysUntilDue(dueDate: string) {
   const diffTime = due.getTime() - today.getTime()
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
-  if (diffDays < 0) return { text: `${Math.abs(diffDays)} days overdue`, color: 'text-red-600' }
-  if (diffDays === 0) return { text: 'Due today', color: 'text-orange-600' }
-  if (diffDays === 1) return { text: 'Due tomorrow', color: 'text-orange-600' }
+  if (diffDays < 0)
+    return { text: `${Math.abs(diffDays)} days overdue`, color: 'text-red-600 dark:text-red-400' }
+  if (diffDays === 0) return { text: 'Due today', color: 'text-orange-600 dark:text-orange-400' }
+  if (diffDays === 1) return { text: 'Due tomorrow', color: 'text-orange-600 dark:text-orange-400' }
   return { text: `${diffDays} days left`, color: 'text-muted-foreground' }
 }
 
@@ -252,7 +265,7 @@ export default function SubmitTaskPage() {
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-0">
             {submissionSuccess && (
-              <div className="bg-green-100 text-green-800 p-3 rounded-lg mb-4 text-center text-sm border border-green-200">
+              <div className="bg-green-100 text-green-800 dark:bg-green-400/15 dark:text-green-300 p-3 rounded-lg mb-4 text-center text-sm border border-green-200 dark:border-green-400/30">
                 <CheckCircle className="h-4 w-4 inline mr-2" />
                 Task submitted successfully!
               </div>
@@ -265,7 +278,10 @@ export default function SubmitTaskPage() {
                 </Label>
                 <Select onValueChange={handleTaskSelect} value={selectedTaskId}>
                   <SelectTrigger
-                    className={cn('rounded-xl border-gray-200', errors.taskId && 'border-red-500')}
+                    className={cn(
+                      'rounded-xl border-gray-200 dark:border-white/10',
+                      errors.taskId && 'border-red-500 dark:border-red-400',
+                    )}
                   >
                     <SelectValue placeholder="Choose a task to update" />
                   </SelectTrigger>
@@ -304,7 +320,10 @@ export default function SubmitTaskPage() {
                   value={selectedStatus}
                 >
                   <SelectTrigger
-                    className={cn('rounded-xl border-gray-200', errors.status && 'border-red-500')}
+                    className={cn(
+                      'rounded-xl border-gray-200 dark:border-white/10',
+                      errors.status && 'border-red-500 dark:border-red-400',
+                    )}
                   >
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
@@ -330,7 +349,10 @@ export default function SubmitTaskPage() {
                     min="0"
                     max="100"
                     placeholder="Enter score (0-100)"
-                    className={cn('rounded-xl border-gray-200', errors.score && 'border-red-500')}
+                    className={cn(
+                      'rounded-xl border-gray-200 dark:border-white/10',
+                      errors.score && 'border-red-500 dark:border-red-400',
+                    )}
                     {...register('score')}
                   />
                   {errors.score && (
@@ -347,7 +369,7 @@ export default function SubmitTaskPage() {
                 <Textarea
                   id="notes"
                   placeholder="Add any notes or comments about your progress..."
-                  className="rounded-xl border-gray-200 min-h-[100px]"
+                  className="rounded-xl border-gray-200 dark:border-white/10 min-h-[100px]"
                   {...register('notes')}
                 />
               </div>
@@ -357,8 +379,8 @@ export default function SubmitTaskPage() {
                 <Label htmlFor="file" className="text-sm font-medium">
                   Attach File (Optional)
                 </Label>
-                <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:border-gray-300 transition-colors">
-                  <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                <div className="border-2 border-dashed border-gray-200 dark:border-white/10 rounded-xl p-4 text-center hover:border-gray-300 dark:hover:border-white/20 transition-colors">
+                  <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400 dark:text-white/40" />
                   <Input
                     id="file"
                     type="file"
@@ -368,11 +390,11 @@ export default function SubmitTaskPage() {
                   />
                   <Label
                     htmlFor="file"
-                    className="cursor-pointer text-sm text-gray-600 hover:text-gray-800"
+                    className="cursor-pointer text-sm text-muted-foreground hover:text-foreground"
                   >
                     Click to upload or drag and drop
                     <br />
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-muted-foreground/70">
                       PDF, DOC, TXT, JPG, PNG (max 10MB)
                     </span>
                   </Label>
@@ -451,17 +473,21 @@ export default function SubmitTaskPage() {
             </CardHeader>
             <CardContent className="p-4 sm:p-6 pt-0 space-y-3 sm:space-y-4">
               <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <div className="text-lg sm:text-2xl font-bold text-blue-600">
+                <div className="text-center p-3 bg-blue-50 dark:bg-blue-400/10 rounded-lg">
+                  <div className="text-lg sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
                     {tasks.filter((t) => t.status === 'In Progress').length}
                   </div>
-                  <div className="text-[10px] sm:text-xs text-blue-600">In Progress</div>
+                  <div className="text-[10px] sm:text-xs text-blue-600 dark:text-blue-300">
+                    In Progress
+                  </div>
                 </div>
-                <div className="text-center p-3 bg-yellow-50 rounded-lg">
-                  <div className="text-lg sm:text-2xl font-bold text-yellow-600">
+                <div className="text-center p-3 bg-yellow-50 dark:bg-amber-400/10 rounded-lg">
+                  <div className="text-lg sm:text-2xl font-bold text-yellow-600 dark:text-amber-300">
                     {tasks.filter((t) => t.status === 'Pending').length}
                   </div>
-                  <div className="text-[10px] sm:text-xs text-yellow-600">Pending</div>
+                  <div className="text-[10px] sm:text-xs text-yellow-600 dark:text-amber-300">
+                    Pending
+                  </div>
                 </div>
               </div>
 
@@ -471,12 +497,14 @@ export default function SubmitTaskPage() {
                   getDaysUntilDue(task.dueDate).text.includes('overdue') ||
                   getDaysUntilDue(task.dueDate).text.includes('today'),
               ) && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div className="p-3 bg-red-50 dark:bg-red-400/10 border border-red-200 dark:border-red-400/30 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
-                    <AlertCircle className="h-4 w-4 text-red-600" />
-                    <span className="text-sm font-medium text-red-800">Urgent Tasks</span>
+                    <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                    <span className="text-sm font-medium text-red-800 dark:text-red-300">
+                      Urgent Tasks
+                    </span>
                   </div>
-                  <p className="text-xs text-red-700">
+                  <p className="text-xs text-red-700 dark:text-red-300/90">
                     You have tasks that are due today or overdue. Please prioritize these
                     submissions.
                   </p>

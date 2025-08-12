@@ -46,8 +46,10 @@ import {
 
 function getPlatformBadge(platform: string) {
   const colors: Record<string, string> = {
-    Cengage: 'bg-blue-100 text-blue-800 hover:bg-blue-100',
-    ALEKS: 'bg-green-100 text-green-800 hover:bg-green-100',
+    Cengage:
+      'bg-blue-100 text-blue-800 hover:bg-blue-100 dark:bg-blue-400/20 dark:text-blue-300 dark:hover:bg-blue-400/25',
+    ALEKS:
+      'bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-400/20 dark:text-green-300 dark:hover:bg-green-400/25',
   }
   return (
     <Badge className={`${colors[platform] || 'bg-gray-100 text-gray-800'} text-xs rounded-full`}>
@@ -60,10 +62,14 @@ function getStatusChip(status: string, count: number) {
   if (count === 0) return null
 
   const colors: Record<string, string> = {
-    completed: 'bg-green-100 text-green-700',
-    inProgress: 'bg-blue-100 text-blue-700',
-    pending: 'bg-yellow-100 text-yellow-700',
-    overdue: 'bg-red-100 text-red-700',
+    completed:
+      'bg-green-100 text-green-700 dark:bg-green-400/20 dark:text-green-300 dark:ring-1 dark:ring-green-400/30',
+    inProgress:
+      'bg-blue-100 text-blue-700 dark:bg-blue-400/20 dark:text-blue-300 dark:ring-1 dark:ring-blue-400/30',
+    pending:
+      'bg-yellow-100 text-yellow-700 dark:bg-amber-400/20 dark:text-amber-300 dark:ring-1 dark:ring-amber-400/30',
+    overdue:
+      'bg-red-100 text-red-700 dark:bg-red-400/20 dark:text-red-300 dark:ring-1 dark:ring-red-400/30',
   }
 
   const labels: Record<string, string> = {
@@ -95,9 +101,12 @@ function getPriorityColor(priority: string) {
 
 function getTaskStatusBadge(status: string) {
   const colors: Record<string, string> = {
-    Completed: 'bg-green-100 text-green-700',
-    'In Progress': 'bg-blue-100 text-blue-700',
-    Pending: 'bg-yellow-100 text-yellow-700',
+    Completed:
+      'bg-green-100 text-green-700 dark:bg-green-400/20 dark:text-green-300 dark:ring-1 dark:ring-green-400/30',
+    'In Progress':
+      'bg-blue-100 text-blue-700 dark:bg-blue-400/20 dark:text-blue-300 dark:ring-1 dark:ring-blue-400/30',
+    Pending:
+      'bg-yellow-100 text-yellow-700 dark:bg-amber-400/20 dark:text-amber-300 dark:ring-1 dark:ring-amber-400/30',
   }
   return (
     <Badge className={`${colors[status] || 'bg-gray-100 text-gray-700'} text-xs rounded-full`}>
@@ -172,11 +181,11 @@ export default function AssignedClientsPage() {
   return (
     <div className="flex-1 space-y-4 sm:space-y-6">
       {/* Header Stats */}
-      <Card className="bg-[var(--primary)] text-[var(--primary-foreground)] border-0 rounded-xl sm:rounded-2xl shadow">
+      <Card className="rounded-xl sm:rounded-2xl shadow">
         <CardContent className="p-4 sm:p-6 flex flex-col gap-3 sm:gap-4">
           <div>
             <h2 className="text-lg sm:text-2xl font-bold mb-1">Assigned Clients 👥</h2>
-            <p className="opacity-80 text-sm sm:text-base">
+            <p className="text-muted-foreground text-sm sm:text-base">
               Manage your assigned clients and track their progress
             </p>
           </div>
@@ -207,11 +216,11 @@ export default function AssignedClientsPage() {
                 placeholder="Search clients..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8 rounded-xl border-gray-200"
+                className="pl-8 rounded-xl border-gray-200 dark:border-white/10"
               />
             </div>
             <Select value={platformFilter} onValueChange={setPlatformFilter}>
-              <SelectTrigger className="w-full sm:w-[140px] rounded-xl border-gray-200">
+              <SelectTrigger className="w-full sm:w-[140px] rounded-xl border-gray-200 dark:border-white/10">
                 <SelectValue placeholder="Platform" />
               </SelectTrigger>
               <SelectContent>
@@ -221,7 +230,7 @@ export default function AssignedClientsPage() {
               </SelectContent>
             </Select>
             <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-full sm:w-[140px] rounded-xl border-gray-200">
+              <SelectTrigger className="w-full sm:w-[140px] rounded-xl border-gray-200 dark:border-white/10">
                 <SelectValue placeholder="Priority" />
               </SelectTrigger>
               <SelectContent>
@@ -268,14 +277,14 @@ export default function AssignedClientsPage() {
             </CardHeader>
             <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6 pt-0">
               {/* Course Info */}
-              <div className="p-2 sm:p-3 bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg sm:rounded-xl">
+              <div className="p-2 sm:p-3 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-white/5 dark:to-blue-500/10 rounded-lg sm:rounded-xl">
                 <div className="flex items-center gap-2 mb-1">
-                  <FileText className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600" />
-                  <span className="font-medium text-xs sm:text-sm text-gray-800">
+                  <FileText className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                  <span className="font-medium text-xs sm:text-sm text-foreground">
                     {client.courseName}
                   </span>
                 </div>
-                <div className="text-[10px] sm:text-xs text-gray-600">
+                <div className="text-[10px] sm:text-xs text-muted-foreground">
                   Last activity: {client.lastActivity}
                 </div>
               </div>
@@ -303,10 +312,10 @@ export default function AssignedClientsPage() {
 
               {/* Next Deadline */}
               {client.nextDeadline && (
-                <div className="p-2 bg-orange-50 rounded-lg border border-orange-100">
+                <div className="p-2 bg-orange-50 dark:bg-orange-400/10 rounded-lg border border-orange-100 dark:border-orange-400/30">
                   <div className="flex items-center gap-2 text-xs sm:text-sm">
-                    <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-orange-600" />
-                    <span className="text-orange-800 font-medium">
+                    <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-orange-600 dark:text-orange-400" />
+                    <span className="text-orange-800 dark:text-orange-300 font-medium">
                       Next deadline: {new Date(client.nextDeadline).toLocaleDateString()}
                     </span>
                   </div>

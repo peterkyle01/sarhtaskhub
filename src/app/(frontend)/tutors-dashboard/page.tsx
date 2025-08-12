@@ -44,9 +44,12 @@ interface DeadlineItem {
 
 function getStatusBadge(status: DashboardTask['status']) {
   const map: Record<DashboardTask['status'], string> = {
-    Completed: 'bg-green-100 text-green-700',
-    'In Progress': 'bg-sky-100 text-sky-700',
-    Pending: 'bg-amber-100 text-amber-700',
+    Completed:
+      'bg-green-100 text-green-700 dark:bg-green-400/20 dark:text-green-300 dark:ring-1 dark:ring-green-400/30',
+    'In Progress':
+      'bg-sky-100 text-sky-700 dark:bg-sky-400/20 dark:text-sky-300 dark:ring-1 dark:ring-sky-400/30',
+    Pending:
+      'bg-amber-100 text-amber-700 dark:bg-amber-400/20 dark:text-amber-300 dark:ring-1 dark:ring-amber-400/30',
   }
   return <Badge className={`${map[status]} rounded-full font-normal`}>{status}</Badge>
 }
@@ -130,13 +133,13 @@ export default function TutorDashboard() {
   return (
     <div className="flex-1 space-y-4 sm:space-y-6">
       {/* Welcome */}
-      <Card className="bg-[var(--primary)] text-[var(--primary-foreground)] border-0 rounded-xl sm:rounded-2xl shadow">
+      <Card className="rounded-xl sm:rounded-2xl shadow">
         <CardContent className="p-4 sm:p-6 flex flex-col gap-3 sm:gap-4">
           <div>
             <h2 className="font-bold mb-1 text-[clamp(1.1rem,4vw,1.75rem)]">
               {loading ? 'Loading...' : `Welcome back, ${stats?.userName || 'Tutor'}! 👋`}
             </h2>
-            <p className="opacity-80 text-sm sm:text-base">
+            <p className="text-muted-foreground text-sm sm:text-base">
               {loading
                 ? 'Fetching your stats...'
                 : `You have ${stats?.pendingTasks ?? 0} pending tasks.`}
@@ -267,10 +270,10 @@ export default function TutorDashboard() {
                 </ChartContainer>
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div className="text-center">
-                    <div className="text-xl sm:text-2xl font-bold text-gray-800">
+                    <div className="text-xl sm:text-2xl font-bold text-foreground">
                       {completionRate}%
                     </div>
-                    <div className="text-[10px] sm:text-xs text-gray-500">Complete</div>
+                    <div className="text-[10px] sm:text-xs text-muted-foreground">Complete</div>
                   </div>
                 </div>
               </div>
@@ -286,9 +289,11 @@ export default function TutorDashboard() {
                       className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full"
                       style={{ backgroundColor: item.color }}
                     />
-                    <span className="text-gray-600">{item.name}</span>
+                    <span className="text-muted-foreground dark:text-muted-foreground">
+                      {item.name}
+                    </span>
                   </div>
-                  <span className="font-medium text-gray-800">{item.value}</span>
+                  <span className="font-medium text-foreground">{item.value}</span>
                 </div>
               ))}
             </div>
@@ -348,7 +353,9 @@ export default function TutorDashboard() {
                       {getTimeUntil(d.hoursLeft)}
                     </Badge>
                   </div>
-                  <div className="text-[10px] sm:text-xs opacity-70 truncate">{d.courseName}</div>
+                  <div className="text-[10px] sm:text-xs opacity-70 truncate text-muted-foreground dark:text-muted-foreground">
+                    {d.courseName}
+                  </div>
                 </div>
               ))}
           </div>
