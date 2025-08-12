@@ -130,7 +130,7 @@ export default function TutorDashboard() {
   return (
     <div className="flex-1 space-y-4 sm:space-y-6">
       {/* Welcome */}
-      <Card className="bg-[var(--primary)] text-[var(--primary-foreground)] border-0 rounded-xl sm:rounded-2xl shadow">
+      <Card className="bg-[var(--primary)] text-[var(--primary-foreground)] border-0 rounded-xl sm:rounded-2xl shadow card-gradient">
         <CardContent className="p-4 sm:p-6 flex flex-col gap-3 sm:gap-4">
           <div>
             <h2 className="font-bold mb-1 text-[clamp(1.1rem,4vw,1.75rem)]">
@@ -160,7 +160,7 @@ export default function TutorDashboard() {
 
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-3 min-w-0">
         {/* Tasks List */}
-        <Card className="lg:col-span-2 rounded-xl sm:rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)]">
+        <Card className="lg:col-span-2 rounded-xl sm:rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)] card-gradient">
           <CardHeader className="pb-2 sm:pb-3 p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -251,7 +251,7 @@ export default function TutorDashboard() {
         </Card>
 
         {/* Progress Chart */}
-        <Card className="rounded-xl sm:rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)] min-w-0">
+        <Card className="rounded-xl sm:rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)] min-w-0 card-gradient">
           <CardHeader className="p-4 sm:p-6">
             <CardTitle className="text-[clamp(.9rem,2.5vw,1.05rem)] sm:text-lg">Progress</CardTitle>
             <CardDescription className="text-xs sm:text-sm">Completed vs Pending</CardDescription>
@@ -297,7 +297,7 @@ export default function TutorDashboard() {
       </div>
 
       {/* Deadlines */}
-      <Card className="rounded-xl sm:rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)]">
+      <Card className="rounded-xl sm:rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)] card-gradient">
         <CardHeader className="p-4 sm:p-6">
           <CardTitle className="text-[clamp(.9rem,2.5vw,1.05rem)] sm:text-lg flex items-center gap-2">
             <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-[var(--accent)]" /> Upcoming

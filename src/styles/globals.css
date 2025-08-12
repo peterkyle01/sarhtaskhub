@@ -208,6 +208,101 @@ body {
 .gradient-accent-ring {
   background: var(--gradient-accent-ring);
 }
+/* Page interior gradient helpers */
+.panel-gradient {
+  background:
+    linear-gradient(
+      135deg,
+      hsl(210 40% 99% / 0.85) 0%,
+      hsl(199 90% 96% / 0.6) 40%,
+      hsl(258 90% 97% / 0.55) 100%
+    ),
+    var(--card);
+  backdrop-filter: saturate(1.2) blur(2px);
+}
+.dark .panel-gradient {
+  background:
+    linear-gradient(
+      140deg,
+      hsl(222 47% 9% / 0.9) 0%,
+      hsl(199 89% 25% / 0.35) 35%,
+      hsl(258 90% 35% / 0.28) 75%,
+      hsl(222 47% 11% / 0.9) 100%
+    ),
+    var(--card);
+}
+.card-gradient {
+  position: relative;
+  background: linear-gradient(
+    155deg,
+    hsl(210 40% 99% / 0.65) 0%,
+    hsl(210 40% 98% / 0.55) 25%,
+    hsl(199 90% 96% / 0.35) 60%,
+    hsl(258 90% 97% / 0.35) 100%
+  );
+  backdrop-filter: blur(14px) saturate(1.35);
+  -webkit-backdrop-filter: blur(14px) saturate(1.35);
+  border: 1px solid hsl(210 40% 98% / 0.5);
+  box-shadow:
+    0 4px 18px -4px hsl(220 40% 20% / 0.08),
+    0 2px 8px -2px hsl(220 40% 20% / 0.06);
+}
+.dark .card-gradient {
+  background: linear-gradient(
+    160deg,
+    hsl(222 47% 9% / 0.6) 0%,
+    hsl(222 47% 11% / 0.55) 25%,
+    hsl(199 89% 25% / 0.22) 55%,
+    hsl(258 90% 35% / 0.2) 100%
+  );
+  border: 1px solid hsl(222 47% 70% / 0.18);
+  box-shadow:
+    0 6px 28px -6px hsl(222 47% 5% / 0.55),
+    0 2px 10px -2px hsl(222 47% 6% / 0.5);
+}
+/* Glass effect for cards */
+.glass-card {
+  background: linear-gradient(145deg, hsl(0 0% 100% / 0.6) 0%, hsl(0 0% 100% / 0.35) 100%)
+    border-box;
+  backdrop-filter: blur(12px) saturate(1.35);
+  -webkit-backdrop-filter: blur(12px) saturate(1.35);
+  border: 1px solid hsl(0 0% 100% / 0.45);
+  box-shadow:
+    0 4px 18px -4px hsl(220 40% 20% / 0.08),
+    0 2px 8px -2px hsl(220 40% 20% / 0.06);
+  position: relative;
+}
+.glass-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    160deg,
+    hsl(199 90% 90% / 0.15),
+    hsl(343 90% 90% / 0.12),
+    hsl(258 90% 90% / 0.15)
+  );
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+.dark .glass-card {
+  background: linear-gradient(150deg, hsl(222 47% 12% / 0.65) 0%, hsl(222 47% 10% / 0.4) 100%)
+    border-box;
+  border: 1px solid hsl(222 47% 60% / 0.18);
+  box-shadow:
+    0 6px 28px -6px hsl(222 47% 5% / 0.55),
+    0 2px 10px -2px hsl(222 47% 6% / 0.5);
+}
+.dark .glass-card::after {
+  background: linear-gradient(
+    160deg,
+    hsl(199 89% 40% / 0.18),
+    hsl(343 82% 45% / 0.15),
+    hsl(258 90% 45% / 0.18)
+  );
+  mix-blend-mode: plus-lighter;
+}
 /* Provide subtle border sheen using accent ring if desired */
 .with-accent-border {
   position: relative;

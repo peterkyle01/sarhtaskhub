@@ -21,7 +21,7 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
       <AutoCollapseWrapper>
         <AdminSidebar user={user} />
       </AutoCollapseWrapper>
-      <SidebarInset className="bg-[var(--background)] transition-colors min-h-screen">
+      <SidebarInset className="bg-[var(--background)] transition-colors min-h-screen panel-gradient">
         <header className="sticky top-0 z-40 flex h-14 sm:h-16 shrink-0 items-center justify-between border-b surface-gradient backdrop-blur supports-[backdrop-filter]:bg-[var(--card)]/80 border-[var(--border)] px-4 sm:px-6 transition-colors shadow-sm">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1 size-8 sm:size-7" />
