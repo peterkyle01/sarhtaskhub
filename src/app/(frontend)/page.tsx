@@ -20,11 +20,11 @@ import {
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Eye, EyeOff, Loader2, FileText } from 'lucide-react'
+import { Eye, EyeOff, Loader2, ServerCog } from 'lucide-react'
 import Link from 'next/link'
 import { ThemeToggle } from '@/components/custom/theme-toggle'
 
-type UserRole = 'ADMIN' | 'WORKER'
+type UserRole = 'ADMIN' | 'WORKER' | 'CLIENT'
 interface UserWithRole {
   role?: UserRole
 }
@@ -58,11 +58,14 @@ export default function SignInPage() {
         return
       }
       const role = (res.user as UserWithRole | undefined)?.role
-      if (role === 'ADMIN') {
-        router.push('/admin-dashboard')
-      } else {
-        router.push('/worker-dashboard')
+      // Explicit role to dashboard path mapping (WORKERs are Tutors in UI)
+      const roleToPath: Record<UserRole, string> = {
+        ADMIN: '/admin-dashboard',
+        WORKER: '/tutors-dashboard',
+        CLIENT: '/tutors-dashboard', // adjust if/when a dedicated client dashboard is added
       }
+      const target = role && roleToPath[role] ? roleToPath[role] : '/tutors-dashboard'
+      router.replace(target)
     })
   }
 
@@ -80,15 +83,15 @@ export default function SignInPage() {
         {/* Logo/Branding Section */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-xl">
-              <FileText className="h-8 w-8" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-xl ring-1 ring-inset ring-primary/20">
+              <ServerCog className="h-8 w-8" />
             </div>
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">Sarh Task Hub</h1>
           <p className="text-muted-foreground text-sm">Professional task management platform</p>
         </div>
 
-        <Card className="shadow-2xl border-border/50 backdrop-blur-sm bg-card/95">
+        <Card className="shadow-2xl border-border/50">
           <CardHeader className="space-y-3 pb-6">
             <CardTitle className="text-2xl font-semibold tracking-tight text-center text-foreground">
               Welcome Back
@@ -176,7 +179,9 @@ export default function SignInPage() {
                 <Button
                   type="submit"
                   disabled={pending}
-                  className="w-full h-11 font-medium bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2"
+                  className="w-full h-11 font-semibold flex items-center justify-center gap-2 relative overflow-hidden rounded-md bg-primary text-primary-foreground shadow-md hover:shadow-lg transition-all duration-200 focus-visible:ring-ring/50 focus-visible:ring-[3px]
+                  before:content-[''] before:absolute before:inset-0 before:rounded-md before:ring-[0.5px] before:ring-inset before:ring-transparent hover:before:ring-primary/20 focus-visible:before:ring-primary/25 dark:hover:before:ring-primary/15 dark:focus-visible:before:ring-primary/20 before:transition-colors before:duration-300 before:pointer-events-none
+                  after:content-[''] after:absolute after:top-0 after:inset-x-0 after:h-px after:bg-gradient-to-r after:from-white/30 after:via-white/40 after:to-white/30 dark:after:from-white/12 dark:after:via-white/18 dark:after:to-white/12 after:pointer-events-none"
                 >
                   {pending && <Loader2 className="h-4 w-4 animate-spin" />}
                   {pending ? 'Signing In...' : 'Sign In'}
