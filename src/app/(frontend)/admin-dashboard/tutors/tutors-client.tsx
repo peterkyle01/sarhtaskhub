@@ -123,25 +123,25 @@ export default function WorkersClient({ initialWorkers, availableUsers }: Props)
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Workers</CardTitle>
-              <CardDescription>Manage workers and performance</CardDescription>
+              <CardTitle>Tutors</CardTitle>
+              <CardDescription>Manage tutors and performance</CardDescription>
             </div>
             {canAdd && (
               <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
                 <DialogTrigger asChild>
                   <Button>
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Worker
+                    Add Tutor
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[425px]">
                   <DialogHeader>
-                    <DialogTitle>Add New Worker</DialogTitle>
-                    <DialogDescription>Create a new worker account.</DialogDescription>
+                    <DialogTitle>Add New Tutor</DialogTitle>
+                    <DialogDescription>Create a new tutor account.</DialogDescription>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="userId">Select Existing Worker User</Label>
+                      <Label htmlFor="userId">Select Existing Tutor User</Label>
                       <Select onValueChange={(v) => setNewUserId(v)} value={newUserId}>
                         <SelectTrigger>
                           <SelectValue placeholder="Choose user" />
@@ -158,7 +158,7 @@ export default function WorkersClient({ initialWorkers, availableUsers }: Props)
                   </div>
                   <DialogFooter>
                     <Button type="submit" onClick={handleAddWorker}>
-                      Add Worker
+                      Add Tutor
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -171,7 +171,7 @@ export default function WorkersClient({ initialWorkers, availableUsers }: Props)
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search workers..."
+                placeholder="Search tutors..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-8"
@@ -194,8 +194,8 @@ export default function WorkersClient({ initialWorkers, availableUsers }: Props)
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Worker</TableHead>
-                  <TableHead>Worker ID</TableHead>
+                  <TableHead>Tutor</TableHead>
+                  <TableHead>Tutor ID</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Performance</TableHead>
                   <TableHead>Created</TableHead>
@@ -268,7 +268,7 @@ export default function WorkersClient({ initialWorkers, availableUsers }: Props)
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle>Delete Worker</AlertDialogTitle>
+                                    <AlertDialogTitle>Delete Tutor</AlertDialogTitle>
                                     <AlertDialogDescription>
                                       Are you sure you want to delete {w.fullName}? This action
                                       cannot be undone.
@@ -298,7 +298,7 @@ export default function WorkersClient({ initialWorkers, availableUsers }: Props)
           <div className="flex items-center justify-between mt-4">
             <div className="text-sm text-muted-foreground">
               Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filtered.length)} of{' '}
-              {filtered.length} workers
+              {filtered.length} tutors
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -341,7 +341,7 @@ export default function WorkersClient({ initialWorkers, availableUsers }: Props)
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Task History - {selectedWorker?.fullName}</DialogTitle>
-            <DialogDescription>Coming soon: detailed worker task history.</DialogDescription>
+            <DialogDescription>Coming soon: detailed tutor task history.</DialogDescription>
           </DialogHeader>
           <div className="py-4 text-sm text-muted-foreground">No history loaded.</div>
         </DialogContent>

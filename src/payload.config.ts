@@ -11,6 +11,7 @@ import { Media } from './collections/Media'
 import { Clients } from './collections/Clients'
 import { Workers } from './collections/Workers'
 import { Tasks } from './collections/Tasks'
+import { ActivityLogs } from './collections/ActivityLogs'
 import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
 
 const filename = fileURLToPath(import.meta.url)
@@ -23,7 +24,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media, Clients, Workers, Tasks],
+  collections: [Users, Media, Clients, Workers, Tasks, ActivityLogs],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

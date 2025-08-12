@@ -72,6 +72,7 @@ export interface Config {
     clients: Client;
     workers: Worker;
     tasks: Task;
+    'activity-logs': ActivityLog;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
@@ -83,6 +84,7 @@ export interface Config {
     clients: ClientsSelect<false> | ClientsSelect<true>;
     workers: WorkersSelect<false> | WorkersSelect<true>;
     tasks: TasksSelect<false> | TasksSelect<true>;
+    'activity-logs': ActivityLogsSelect<false> | ActivityLogsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
@@ -135,7 +137,7 @@ export interface User {
    */
   role: 'ADMIN' | 'WORKER' | 'CLIENT';
   /**
-   * Auto-generated identifier for worker accounts (e.g., WK123456).
+   * Auto-generated identifier for tutor accounts (e.g., WK123456).
    */
   workerId?: string | null;
   profilePicture?: (number | null) | Media;
@@ -260,6 +262,40 @@ export interface Task {
   createdAt: string;
 }
 /**
+ * System activity and audit trail entries
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "activity-logs".
+ */
+export interface ActivityLog {
+  id: number;
+  type:
+    | 'task_created'
+    | 'task_updated'
+    | 'task_assigned'
+    | 'task_completed'
+    | 'client_onboarded'
+    | 'worker_added'
+    | 'worker_edited';
+  title: string;
+  description?: string | null;
+  actor?: (number | null) | User;
+  task?: (number | null) | Task;
+  client?: (number | null) | Client;
+  worker?: (number | null) | User;
+  metadata?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents".
  */
@@ -285,6 +321,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'tasks';
         value: number | Task;
+      } | null)
+    | ({
+        relationTo: 'activity-logs';
+        value: number | ActivityLog;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -425,6 +465,22 @@ export interface TasksSelect<T extends boolean = true> {
   worker?: T;
   score?: T;
   notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "activity-logs_select".
+ */
+export interface ActivityLogsSelect<T extends boolean = true> {
+  type?: T;
+  title?: T;
+  description?: T;
+  actor?: T;
+  task?: T;
+  client?: T;
+  worker?: T;
+  metadata?: T;
   updatedAt?: T;
   createdAt?: T;
 }

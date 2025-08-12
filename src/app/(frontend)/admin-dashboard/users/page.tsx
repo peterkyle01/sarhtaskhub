@@ -64,12 +64,12 @@ function UserStatsCards({ stats }: { stats: ReturnType<typeof getUserStats> }) {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Workers</CardTitle>
+          <CardTitle className="text-sm font-medium">Tutors</CardTitle>
           <Users className="h-4 w-4 text-blue-600 dark:text-blue-300" />
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="text-2xl font-bold text-foreground">{stats.workers}</div>
-          <Badge className={getRoleBadgeColor('worker')}>Worker Role</Badge>
+          <Badge className={getRoleBadgeColor('worker')}>Tutor Role</Badge>
         </CardContent>
       </Card>
 
@@ -137,7 +137,7 @@ export default async function UserPage() {
         <div>
           <h2 className="text-2xl font-bold text-foreground">User Management</h2>
           <p className="text-muted-foreground">
-            View detailed profiles and manage worker and client accounts
+            View detailed profiles and manage tutor and client accounts
           </p>
         </div>
 
@@ -165,7 +165,7 @@ export default async function UserPage() {
               <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-foreground mb-2">No users yet</h3>
               <p className="text-muted-foreground">
-                Create your first worker or client account to get started.
+                Create your first tutor or client account to get started.
               </p>
             </div>
           )}

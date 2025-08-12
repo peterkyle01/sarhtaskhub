@@ -41,23 +41,24 @@ export const Users: CollectionConfig = {
       defaultValue: 'WORKER',
       options: [
         { label: 'Admin', value: 'ADMIN' },
-        { label: 'Worker', value: 'WORKER' },
+        // Display Tutor instead of Worker (value remains WORKER for backend compatibility)
+        { label: 'Tutor', value: 'WORKER' },
         { label: 'Client', value: 'CLIENT' },
       ],
       admin: {
         description: 'Determines access level within the system.',
       },
     },
-    // Auto-generated workerId for users whose role is WORKER (mirrors Clients/Tasks pattern)
+    // Auto-generated workerId (displayed as Tutor ID in UI) for users whose role is WORKER
     {
       name: 'workerId',
       type: 'text',
-      label: 'Worker ID',
+      label: 'Tutor ID',
       unique: true,
       index: true,
       admin: {
         readOnly: true,
-        description: 'Auto-generated identifier for worker accounts (e.g., WK123456).',
+        description: 'Auto-generated identifier for tutor accounts (e.g., WK123456).',
         condition: (data) => data?.role === 'WORKER',
       },
     },

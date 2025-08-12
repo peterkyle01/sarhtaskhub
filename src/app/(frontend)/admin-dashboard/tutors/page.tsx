@@ -1,4 +1,4 @@
-import WorkersClient from './workers-client'
+import WorkersClient from './tutors-client'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { listWorkers } from '@/server-actions/worker-actions'
@@ -19,7 +19,7 @@ interface BaseWorkerUser {
 export default async function WorkersPage() {
   const payload = await getPayload({ config })
 
-  // All base users that have role WORKER
+  // All base users that have role WORKER (displayed as Tutor in UI)
   const baseUsersRes = await payload.find({
     collection: 'users',
     where: { role: { equals: 'WORKER' } },
