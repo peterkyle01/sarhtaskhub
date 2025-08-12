@@ -58,7 +58,7 @@ export default function DashboardClient({
   return (
     <div className="flex-1 space-y-4 sm:space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg sm:text-xl font-semibold">Dashboard</h1>
+        <h1 className="font-semibold text-[clamp(.95rem,2.5vw,1.1rem)] sm:text-lg">Dashboard</h1>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="icon" className="relative h-8 w-8 sm:h-10 sm:w-10">
@@ -96,7 +96,7 @@ export default function DashboardClient({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+  <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4">
         <Card className="bg-[var(--card)] border border-[var(--border)]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium">Total Clients</CardTitle>
@@ -138,7 +138,7 @@ export default function DashboardClient({
           </CardContent>
         </Card>
       </div>
-      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
+  <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2 bg-[var(--card)] border border-[var(--border)] overflow-hidden">
           <CardHeader>
             <CardTitle className="text-sm sm:text-base">Task Completion Overview</CardTitle>

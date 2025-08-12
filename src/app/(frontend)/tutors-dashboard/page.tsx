@@ -4,9 +4,19 @@ import { useMemo, useEffect, useState } from 'react'
 import { Clock, CheckCircle, AlertCircle } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Progress } from '@/components/ui/progress'
-import { PieChart, Pie, Cell } from 'recharts'
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+import dynamic from 'next/dynamic'
+import { ChartContainer } from '@/components/ui/chart'
+// Lazy load heavy chart pie
+const ProgressPie = dynamic(() => import('@/components/custom/progress-pie'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-[160px] sm:h-[220px] text-xs text-muted-foreground">
+      Loading chart...
+    </div>
+  ),
+})
 
 // Types
 interface DashboardTask {
@@ -123,7 +133,7 @@ export default function TutorDashboard() {
       <Card className="bg-[var(--primary)] text-[var(--primary-foreground)] border-0 rounded-xl sm:rounded-2xl shadow">
         <CardContent className="p-4 sm:p-6 flex flex-col gap-3 sm:gap-4">
           <div>
-            <h2 className="text-lg sm:text-2xl font-bold mb-1">
+            <h2 className="font-bold mb-1 text-[clamp(1.1rem,4vw,1.75rem)]">
               {loading ? 'Loading...' : `Welcome back, ${stats?.userName || 'Tutor'}! 👋`}
             </h2>
             <p className="opacity-80 text-sm sm:text-base">
@@ -154,7 +164,9 @@ export default function TutorDashboard() {
           <CardHeader className="pb-2 sm:pb-3 p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-base sm:text-lg">Today&apos;s Tasks</CardTitle>
+                <CardTitle className="text-[clamp(.9rem,2.5vw,1.05rem)] sm:text-lg">
+                  Today&apos;s Tasks
+                </CardTitle>
                 <CardDescription className="text-xs sm:text-sm">
                   {todayCompletionRate}% completed (
                   {todayTasks.filter((t) => t.status === 'Completed').length} of {todayTasks.length}
@@ -169,45 +181,71 @@ export default function TutorDashboard() {
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-0">
             <div className="space-y-2 sm:space-y-3">
-              {todayTasks.length === 0 && (
+              {loading && todayTasks.length === 0 && (
+                <div className="space-y-2 sm:space-y-3">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="border-l-4 border-transparent rounded-lg sm:rounded-xl bg-[var(--card)] p-0"
+                    >
+                      <div className="p-3 sm:p-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Skeleton className="h-3 w-20 rounded" />
+                            <Skeleton className="h-4 w-10 rounded-full" />
+                          </div>
+                          <Skeleton className="h-4 w-16 rounded" />
+                        </div>
+                        <Skeleton className="h-3 w-40" />
+                        <div className="flex items-center justify-between">
+                          <Skeleton className="h-3 w-24" />
+                          <Skeleton className="h-4 w-12 rounded-full" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {!loading && todayTasks.length === 0 && (
                 <div className="text-xs sm:text-sm opacity-60">No tasks for today.</div>
               )}
-              {todayTasks.map((task) => (
-                <Card
-                  key={task.id}
-                  className={`border-l-4 ${getPriorityAccent(task.priority)} rounded-lg sm:rounded-xl shadow-sm bg-[var(--card)]`}
-                >
-                  <CardContent className="p-3 sm:p-4">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                        <span className="font-medium text-xs sm:text-sm truncate">
-                          {task.clientName}
-                        </span>
-                        <Badge variant="outline" className="rounded-full text-[10px] sm:text-xs">
-                          {task.platform}
+              {!loading &&
+                todayTasks.map((task) => (
+                  <Card
+                    key={task.id}
+                    className={`border-l-4 ${getPriorityAccent(task.priority)} rounded-lg sm:rounded-xl shadow-sm bg-[var(--card)]`}
+                  >
+                    <CardContent className="p-3 sm:p-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                          <span className="font-medium text-xs sm:text-sm truncate">
+                            {task.clientName}
+                          </span>
+                          <Badge variant="outline" className="rounded-full text-[10px] sm:text-xs">
+                            {task.platform}
+                          </Badge>
+                        </div>
+                        {getStatusBadge(task.status)}
+                      </div>
+                      <div className="text-[10px] sm:text-xs opacity-70 mb-1.5 sm:mb-2 truncate">
+                        {task.courseName} - {task.taskType}
+                      </div>
+                      <div className="flex items-center justify-between text-[10px] sm:text-[11px] opacity-70">
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Due: {task.dueTime}
+                          </span>
+                          {task.estimatedTime && (
+                            <span className="hidden sm:inline">Est: {task.estimatedTime}</span>
+                          )}
+                        </div>
+                        <Badge variant="outline" className="rounded-full text-[9px] sm:text-[10px]">
+                          {task.priority}
                         </Badge>
                       </div>
-                      {getStatusBadge(task.status)}
-                    </div>
-                    <div className="text-[10px] sm:text-xs opacity-70 mb-1.5 sm:mb-2 truncate">
-                      {task.courseName} - {task.taskType}
-                    </div>
-                    <div className="flex items-center justify-between text-[10px] sm:text-[11px] opacity-70">
-                      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Due: {task.dueTime}
-                        </span>
-                        {task.estimatedTime && (
-                          <span className="hidden sm:inline">Est: {task.estimatedTime}</span>
-                        )}
-                      </div>
-                      <Badge variant="outline" className="rounded-full text-[9px] sm:text-[10px]">
-                        {task.priority}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))}
             </div>
           </CardContent>
         </Card>
@@ -215,7 +253,7 @@ export default function TutorDashboard() {
         {/* Progress Chart */}
         <Card className="rounded-xl sm:rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)] min-w-0">
           <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="text-base sm:text-lg">Progress</CardTitle>
+            <CardTitle className="text-[clamp(.9rem,2.5vw,1.05rem)] sm:text-lg">Progress</CardTitle>
             <CardDescription className="text-xs sm:text-sm">Completed vs Pending</CardDescription>
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-0">
@@ -225,22 +263,7 @@ export default function TutorDashboard() {
                   config={progressChartConfig}
                   className="h-[160px] w-[160px] xs:h-[180px] xs:w-[180px] sm:h-[220px] sm:w-[220px] flex items-center justify-center"
                 >
-                  <PieChart>
-                    <Pie
-                      data={progressData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={75}
-                      paddingAngle={4}
-                      dataKey="value"
-                    >
-                      {progressData.map((entry) => (
-                        <Cell key={entry.name} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                  </PieChart>
+                  <ProgressPie data={progressData} />
                 </ChartContainer>
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div className="text-center">
@@ -276,7 +299,7 @@ export default function TutorDashboard() {
       {/* Deadlines */}
       <Card className="rounded-xl sm:rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)]">
         <CardHeader className="p-4 sm:p-6">
-          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+          <CardTitle className="text-[clamp(.9rem,2.5vw,1.05rem)] sm:text-lg flex items-center gap-2">
             <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-[var(--accent)]" /> Upcoming
             Deadlines
           </CardTitle>
@@ -284,33 +307,50 @@ export default function TutorDashboard() {
         </CardHeader>
         <CardContent className="p-4 sm:p-6 pt-0">
           <div className="grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {upcomingDeadlines.length === 0 && (
+            {loading && upcomingDeadlines.length === 0 && (
+              <>
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="p-3 sm:p-4 rounded-lg sm:rounded-xl border-l-4 border-transparent flex flex-col gap-2 bg-[var(--card)]"
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <Skeleton className="h-3 w-24" />
+                      <Skeleton className="h-5 w-14 rounded-full" />
+                    </div>
+                    <Skeleton className="h-3 w-32" />
+                  </div>
+                ))}
+              </>
+            )}
+            {!loading && upcomingDeadlines.length === 0 && (
               <div className="text-xs sm:text-sm opacity-60 col-span-full">
                 No upcoming deadlines.
               </div>
             )}
-            {upcomingDeadlines.map((d) => (
-              <div
-                key={d.id}
-                className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border-l-4 ${getPriorityAccent(d.priority)} flex flex-col gap-1 bg-[var(--card)]`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-xs sm:text-sm truncate">{d.clientName}</span>
-                  <Badge
-                    className={`rounded-full text-[9px] sm:text-[10px] font-normal ${
-                      d.hoursLeft < 24
-                        ? 'bg-red-100 text-red-700'
-                        : d.hoursLeft < 48
-                          ? 'bg-amber-100 text-amber-700'
-                          : 'bg-emerald-100 text-emerald-700'
-                    }`}
-                  >
-                    {getTimeUntil(d.hoursLeft)}
-                  </Badge>
+            {!loading &&
+              upcomingDeadlines.map((d) => (
+                <div
+                  key={d.id}
+                  className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border-l-4 ${getPriorityAccent(d.priority)} flex flex-col gap-1 bg-[var(--card)]`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-xs sm:text-sm truncate">{d.clientName}</span>
+                    <Badge
+                      className={`rounded-full text-[9px] sm:text-[10px] font-normal ${
+                        d.hoursLeft < 24
+                          ? 'bg-red-100 text-red-700'
+                          : d.hoursLeft < 48
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-emerald-100 text-emerald-700'
+                      }`}
+                    >
+                      {getTimeUntil(d.hoursLeft)}
+                    </Badge>
+                  </div>
+                  <div className="text-[10px] sm:text-xs opacity-70 truncate">{d.courseName}</div>
                 </div>
-                <div className="text-[10px] sm:text-xs opacity-70 truncate">{d.courseName}</div>
-              </div>
-            ))}
+              ))}
           </div>
         </CardContent>
       </Card>
