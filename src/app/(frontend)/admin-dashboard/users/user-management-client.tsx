@@ -87,7 +87,7 @@ export function UserManagementClient() {
         <DialogHeader>
           <DialogTitle>Create New User Account</DialogTitle>
           <DialogDescription>
-            Create a new admin, worker, or client account. They will be able to login with these
+            Create a new admin, tutor, or client account. They will be able to login with these
             credentials.
           </DialogDescription>
         </DialogHeader>
@@ -158,7 +158,7 @@ export function UserManagementClient() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="WORKER">Worker</SelectItem>
+                <SelectItem value="WORKER">Tutor</SelectItem>
                 <SelectItem value="CLIENT">Client</SelectItem>
                 <SelectItem value="ADMIN">Admin</SelectItem>
               </SelectContent>

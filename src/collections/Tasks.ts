@@ -141,6 +141,65 @@ export const Tasks: CollectionConfig = {
         return data
       },
     ],
+    afterChange: [
+      async ({ doc, previousDoc, operation, req }) => {
+        try {
+          const actorId =
+            req.user && 'id' in req.user ? (req.user as unknown as { id: number }).id : undefined
+          type LogType =
+            | 'task_created'
+            | 'task_updated'
+            | 'task_assigned'
+            | 'task_completed'
+            | 'client_onboarded'
+            | 'worker_added'
+            | 'worker_edited'
+          const base: {
+            collection: 'activity-logs'
+            data: {
+              type: LogType
+              title: string
+              description: string
+              actor?: number
+              task: number
+              metadata: Record<string, unknown>
+            }
+          } = {
+            collection: 'activity-logs',
+            data: {
+              type: operation === 'create' ? 'task_created' : 'task_updated',
+              title:
+                operation === 'create'
+                  ? `Task Created (${doc.taskId || doc.id})`
+                  : `Task Updated (${doc.taskId || doc.id})`,
+              description:
+                operation === 'create'
+                  ? `New task ${doc.taskId || doc.id} created.`
+                  : `Task ${doc.taskId || doc.id} updated.`,
+              actor: actorId,
+              task: doc.id,
+              metadata: {},
+            },
+          }
+          // Detect assignment change
+          if (operation === 'update' && previousDoc) {
+            if (previousDoc.worker !== doc.worker) {
+              base.data.type = 'task_assigned'
+              base.data.title = `Task Assigned (${doc.taskId || doc.id})`
+              base.data.description = `Task ${doc.taskId || doc.id} assigned to worker #${doc.worker}`
+              base.data.metadata.workerId = doc.worker as unknown as number
+            } else if (previousDoc.status !== doc.status && doc.status === 'Completed') {
+              base.data.type = 'task_completed'
+              base.data.title = `Task Completed (${doc.taskId || doc.id})`
+              base.data.description = `Task ${doc.taskId || doc.id} marked completed.`
+            }
+          }
+          await req.payload.create(base)
+        } catch (e) {
+          req.payload.logger.error('Failed to log task activity', e)
+        }
+      },
+    ],
   },
 }
 

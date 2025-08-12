@@ -60,7 +60,7 @@ function getTimeUntil(hoursLeft: number) {
   return `${days}d left`
 }
 
-export default function WorkerDashboard() {
+export default function TutorDashboard() {
   const [stats, setStats] = useState<{
     userName: string
     totalTasks: number
@@ -124,7 +124,7 @@ export default function WorkerDashboard() {
         <CardContent className="p-4 sm:p-6 flex flex-col gap-3 sm:gap-4">
           <div>
             <h2 className="text-lg sm:text-2xl font-bold mb-1">
-              {loading ? 'Loading...' : `Welcome back, ${stats?.userName || 'Worker'}! 👋`}
+              {loading ? 'Loading...' : `Welcome back, ${stats?.userName || 'Tutor'}! 👋`}
             </h2>
             <p className="opacity-80 text-sm sm:text-base">
               {loading

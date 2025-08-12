@@ -31,7 +31,8 @@ export const Workers: CollectionConfig = {
     {
       name: 'workerId',
       type: 'text',
-      label: 'Worker ID',
+      // Display Tutor ID label while keeping backend field name workerId
+      label: 'Tutor ID',
       unique: true,
       index: true,
       admin: {
@@ -73,7 +74,33 @@ export const Workers: CollectionConfig = {
         return data
       },
     ],
+    afterChange: [
+      async ({ doc, operation, req }) => {
+        try {
+          const actorId =
+            req.user && 'id' in req.user ? (req.user as unknown as { id: number }).id : undefined
+          await req.payload.create({
+            collection: 'activity-logs',
+            data: {
+              type: operation === 'create' ? 'worker_added' : 'worker_edited',
+              title:
+                operation === 'create'
+                  ? `Tutor Added (${doc.workerId || doc.id})`
+                  : `Tutor Updated (${doc.workerId || doc.id})`,
+              description:
+                operation === 'create'
+                  ? `New tutor profile ${doc.workerId || doc.id} created.`
+                  : `Tutor profile ${doc.workerId || doc.id} updated.`,
+              actor: actorId,
+              worker: doc.id,
+              metadata: {},
+            },
+          })
+        } catch (e) {
+          req.payload.logger.error('Failed to log worker activity', e)
+        }
+      },
+    ],
   },
 }
-
 export default Workers

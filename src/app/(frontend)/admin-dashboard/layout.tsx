@@ -21,6 +21,7 @@ import type { Config } from '@/payload-types'
 import { ThemeToggle } from '@/components/custom/theme-toggle'
 import { LogoutButton } from '../../../components/custom/logout-button'
 import { getCurrentUser } from '@/server-actions/user-actions'
+import { displayRole } from '@/lib/user-utils'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
@@ -38,7 +39,7 @@ const navigationItems = [
   { title: 'Dashboard', url: '/admin-dashboard', icon: Home },
   { title: 'Users', url: '/admin-dashboard/users', icon: Users },
   { title: 'Clients', url: '/admin-dashboard/clients', icon: UserCheck },
-  { title: 'Workers', url: '/admin-dashboard/workers', icon: UserCheck },
+  { title: 'Tutors', url: '/admin-dashboard/tutors', icon: UserCheck },
   { title: 'Tasks', url: '/admin-dashboard/tasks', icon: FileText },
   { title: 'Reports', url: '/admin-dashboard/reports', icon: BarChart3 },
 ]
@@ -128,7 +129,7 @@ function AdminSidebar({ user }: { user: AppUser | null }) {
               <div className="flex items-center gap-1">
                 <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-green-500 animate-pulse"></div>
                 <span className="text-[10px] sm:text-xs text-muted-foreground font-medium">
-                  {user?.role || 'ADMIN'}
+                  {displayRole(user?.role || 'ADMIN')}
                 </span>
               </div>
             </div>

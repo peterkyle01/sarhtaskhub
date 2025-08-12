@@ -127,6 +127,34 @@ export const Clients: CollectionConfig = {
         return data
       },
     ],
+    afterChange: [
+      async ({ doc, operation, req }) => {
+        try {
+          const actorId =
+            req.user && 'id' in req.user ? (req.user as unknown as { id: number }).id : undefined
+          const clientName = doc.name || doc.clientId || doc.id
+          await req.payload.create({
+            collection: 'activity-logs',
+            data: {
+              type: 'client_onboarded',
+              title:
+                operation === 'create'
+                  ? `Client Onboarded (${clientName})`
+                  : `Client Updated (${clientName})`,
+              description:
+                operation === 'create'
+                  ? `Client ${clientName} added to the system.`
+                  : `Client ${clientName} record updated.`,
+              actor: actorId,
+              client: doc.id,
+              metadata: {},
+            },
+          })
+        } catch (e) {
+          req.payload.logger.error('Failed to log client activity', e)
+        }
+      },
+    ],
   },
 }
 

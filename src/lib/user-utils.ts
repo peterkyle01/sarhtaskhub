@@ -16,6 +16,20 @@ export function getRoleBadgeColor(role: string): string {
   }
 }
 
+// Map backend role values to user-friendly display labels
+export function displayRole(role: string): string {
+  switch (role?.toUpperCase()) {
+    case 'WORKER':
+      return 'Tutor'
+    case 'ADMIN':
+      return 'Admin'
+    case 'CLIENT':
+      return 'Client'
+    default:
+      return role
+  }
+}
+
 export function formatUserDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString('en-US', {
     year: 'numeric',

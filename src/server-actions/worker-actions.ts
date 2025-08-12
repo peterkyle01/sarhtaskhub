@@ -5,6 +5,7 @@ import config from '@payload-config'
 import { revalidatePath } from 'next/cache'
 import { getCurrentUser } from './user-actions'
 
+// Backend still uses 'workers'; UI may display Tutor instead.
 const WORKERS_COLLECTION = 'workers' as const
 const USERS_COLLECTION = 'users' as const
 

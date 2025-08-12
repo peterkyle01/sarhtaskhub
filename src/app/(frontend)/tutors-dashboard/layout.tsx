@@ -19,9 +19,10 @@ import {
 import { Home, Users, Upload, FileText } from 'lucide-react'
 import type { Config } from '@/payload-types'
 import { ThemeToggle } from '@/components/custom/theme-toggle'
-import { LogoutButton } from './logout-button'
+import { displayRole } from '@/lib/user-utils'
 import { getCurrentUser } from '@/server-actions/user-actions'
 import Link from 'next/link'
+import { LogoutButton } from '@/components/custom/logout-button'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -41,7 +42,7 @@ const navigationItems = [
 ]
 
 function WorkerSidebar({ user }: { user: AppUser | null }) {
-  const displayName = user?.fullName || user?.email || 'Worker'
+  const displayName = user?.fullName || user?.email || 'Tutor'
   const avatarURL = (() => {
     const pic = user?.profilePicture
     if (pic && typeof pic === 'object' && 'url' in pic && typeof pic.url === 'string') {
@@ -69,7 +70,7 @@ function WorkerSidebar({ user }: { user: AppUser | null }) {
 
         <div className="px-2 sm:px-4 pb-1 sm:pb-2">
           <span className="text-[10px] w-fit mx-auto block uppercase text-muted-foreground font-semibold tracking-wider bg-secondary/50 px-2 py-0.5 rounded-full text-center">
-            Worker Panel
+            Tutors Panel
           </span>
         </div>
       </SidebarHeader>
@@ -125,7 +126,7 @@ function WorkerSidebar({ user }: { user: AppUser | null }) {
               <div className="flex items-center gap-1">
                 <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-green-500 animate-pulse"></div>
                 <span className="text-[10px] sm:text-xs text-muted-foreground font-medium">
-                  {user?.role || 'WORKER'}
+                  {displayRole(user?.role || 'WORKER')}
                 </span>
               </div>
             </div>

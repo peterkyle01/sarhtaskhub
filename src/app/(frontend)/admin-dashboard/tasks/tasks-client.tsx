@@ -394,18 +394,18 @@ export default function TasksClient({ initialTasks, initialClients, initialWorke
                     </div>
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="worker">Assigned Worker</Label>
+                    <Label htmlFor="worker">Assigned Tutor</Label>
                     <Select
                       value={newTask.worker}
                       onValueChange={(value) => setNewTask({ ...newTask, worker: value })}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select worker (optional)" />
+                        <SelectValue placeholder="Select tutor (optional)" />
                       </SelectTrigger>
                       <SelectContent>
                         {workers.map((w) => (
                           <SelectItem key={w.id} value={String(w.id)}>
-                            {w.fullName || `Worker ${w.id}`}
+                            {w.fullName || `Tutor ${w.id}`}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -478,7 +478,7 @@ export default function TasksClient({ initialTasks, initialClients, initialWorke
                   <TableHead className="py-2">Type</TableHead>
                   <TableHead className="py-2">Due Date</TableHead>
                   <TableHead className="py-2">Status</TableHead>
-                  <TableHead className="py-2">Worker</TableHead>
+                  <TableHead className="py-2">Tutor</TableHead>
                   <TableHead className="py-2">Score</TableHead>
                   <TableHead className="py-2 max-w-[200px]">Notes</TableHead>
                   <TableHead className="py-2 text-right">Actions</TableHead>
@@ -493,7 +493,7 @@ export default function TasksClient({ initialTasks, initialClients, initialWorke
                       : `Client ${task.client}`
                   const workerName =
                     typeof task.worker === 'object' && task.worker
-                      ? task.worker.fullName || `Worker ${task.worker.id}`
+                      ? task.worker.fullName || `Tutor ${task.worker.id}`
                       : ''
                   return (
                     <TableRow key={task.id} className="h-12">
@@ -643,23 +643,23 @@ export default function TasksClient({ initialTasks, initialClients, initialWorke
           <DialogHeader>
             <DialogTitle>Assign Task</DialogTitle>
             <DialogDescription>
-              Assign task {selectedTask?.taskId || selectedTask?.id} to a worker.
+              Assign task {selectedTask?.taskId || selectedTask?.id} to a tutor.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="worker">Select Worker</Label>
+              <Label htmlFor="worker">Select Tutor</Label>
               <Select
                 value={assignTask.worker}
                 onValueChange={(value) => setAssignTask({ ...assignTask, worker: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose a worker" />
+                  <SelectValue placeholder="Choose a tutor" />
                 </SelectTrigger>
                 <SelectContent>
                   {workers.map((w) => (
                     <SelectItem key={w.id} value={String(w.id)}>
-                      {w.fullName || `Worker ${w.id}`}
+                      {w.fullName || `Tutor ${w.id}`}
                     </SelectItem>
                   ))}
                 </SelectContent>

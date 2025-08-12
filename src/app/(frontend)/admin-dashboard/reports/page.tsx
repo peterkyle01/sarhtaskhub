@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Search,
   Download,
@@ -28,122 +28,31 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Label } from '@/components/ui/label'
 
-// Mock activity log data
-const mockActivityLogs = [
-  {
-    id: 'LOG001',
-    type: 'task_completed',
-    title: 'Task Completed',
-    description: 'Task TSK002 (Statistics Assignment) marked as completed',
-    actor: 'Mike Chen',
-    actorRole: 'Worker',
-    timestamp: '2024-02-07T14:30:00Z',
-    details: {
-      taskId: 'TSK002',
-      clientName: 'Emily Johnson',
-      score: 95,
-      platform: 'ALEKS',
-    },
-  },
-  {
-    id: 'LOG002',
-    type: 'client_onboarded',
-    title: 'New Client Onboarded',
-    description: 'Jessica Miller has been added to the system',
-    actor: 'Sarah Wilson',
-    actorRole: 'Admin',
-    timestamp: '2024-02-07T13:15:00Z',
-    details: {
-      clientName: 'Jessica Miller',
-      platform: 'ALEKS',
-      courseName: 'Geometry',
-    },
-  },
-  {
-    id: 'LOG003',
-    type: 'worker_edited',
-    title: 'Worker Profile Updated',
-    description: "Alex Thompson's profile information was modified",
-    actor: 'Admin User',
-    actorRole: 'Admin',
-    timestamp: '2024-02-07T12:45:00Z',
-    details: {
-      workerName: 'Alex Thompson',
-      changes: ['Email updated', 'Specialties modified'],
-    },
-  },
-  {
-    id: 'LOG004',
-    type: 'task_assigned',
-    title: 'Task Assigned',
-    description: 'Task TSK006 assigned to Sarah Wilson',
-    actor: 'Admin User',
-    actorRole: 'Admin',
-    timestamp: '2024-02-07T11:20:00Z',
-    details: {
-      taskId: 'TSK006',
-      workerName: 'Sarah Wilson',
-      clientName: 'Jessica Miller',
-      taskType: 'Course',
-    },
-  },
-  {
-    id: 'LOG005',
-    type: 'task_overdue',
-    title: 'Task Overdue',
-    description: 'Task TSK003 has passed its deadline',
-    actor: 'System',
-    actorRole: 'System',
-    timestamp: '2024-02-07T10:00:00Z',
-    details: {
-      taskId: 'TSK003',
-      clientName: 'Michael Brown',
-      dueDate: '2024-02-06',
-      platform: 'Cengage',
-    },
-  },
-  {
-    id: 'LOG006',
-    type: 'worker_added',
-    title: 'New Worker Added',
-    description: 'Emma Davis joined the team',
-    actor: 'Admin User',
-    actorRole: 'Admin',
-    timestamp: '2024-02-07T09:30:00Z',
-    details: {
-      workerName: 'Emma Davis',
-      specialties: ['Calculus', 'Linear Algebra'],
-    },
-  },
-  {
-    id: 'LOG007',
-    type: 'task_updated',
-    title: 'Task Status Updated',
-    description: 'Task TSK001 status changed to In Progress',
-    actor: 'Sarah Wilson',
-    actorRole: 'Worker',
-    timestamp: '2024-02-07T08:45:00Z',
-    details: {
-      taskId: 'TSK001',
-      clientName: 'John Smith',
-      oldStatus: 'Pending',
-      newStatus: 'In Progress',
-    },
-  },
-  {
-    id: 'LOG008',
-    type: 'client_deleted',
-    title: 'Client Removed',
-    description: 'Client record for Test User was deleted',
-    actor: 'Admin User',
-    actorRole: 'Admin',
-    timestamp: '2024-02-06T16:20:00Z',
-    details: {
-      clientName: 'Test User',
-      reason: 'Duplicate entry',
-    },
-  },
-]
+interface UILogMetadata {
+  clientName?: string
+  workerName?: string
+  changes?: string[]
+  [key: string]: unknown
+}
+
+interface UILog {
+  id: number | string
+  type: string
+  title: string
+  description?: string | null
+  actorName?: string
+  actorRole?: string
+  createdAt: string
+  metadata?: UILogMetadata | null
+}
+
+function safeField<T extends object>(obj: unknown, key: keyof T): string | undefined {
+  if (obj && typeof obj === 'object' && key in obj) {
+    const val = (obj as T)[key]
+    return typeof val === 'string' ? val : undefined
+  }
+  return undefined
+}
 
 const actors = ['Mike Chen', 'Sarah Wilson', 'Admin User', 'System', 'Lisa Rodriguez', 'John Doe']
 
@@ -206,20 +115,53 @@ export default function ReportsPage() {
   const [typeFilter, setTypeFilter] = useState('all')
   const [dateRange, setDateRange] = useState({ from: '', to: '' })
   const [isDateFilterOpen, setIsDateFilterOpen] = useState(false)
+  const [logs, setLogs] = useState<UILog[]>([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    async function load() {
+      setLoading(true)
+      try {
+        const { fetchActivityLogs } = await import('@/server-actions/activity-actions')
+        const fetched = await fetchActivityLogs({})
+        if (!active) return
+        const mapped: UILog[] = fetched.map((l) => ({
+          id: l.id,
+          type: l.type,
+          title: l.title,
+          description: l.description || undefined,
+          actorName: safeField<{ fullName: string }>(l.actor, 'fullName'),
+          actorRole: safeField<{ role: string }>(l.actor, 'role'),
+          createdAt: l.createdAt,
+          metadata: (l.metadata || null) as UILogMetadata | null,
+        }))
+        setLogs(mapped)
+      } catch (e) {
+        console.error('Failed to load activity logs', e)
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+    load()
+    return () => {
+      active = false
+    }
+  }, [])
 
   // Filter logs based on search term and filters
-  const filteredLogs = mockActivityLogs.filter((log) => {
+  const filteredLogs = logs.filter((log) => {
     const matchesSearch =
       log.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.actor.toLowerCase().includes(searchTerm.toLowerCase())
+      (log.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (log.actorName || '').toLowerCase().includes(searchTerm.toLowerCase())
 
-    const matchesActor = actorFilter === 'all' || log.actor === actorFilter
+    const matchesActor = actorFilter === 'all' || log.actorName === actorFilter
     const matchesType = typeFilter === 'all' || log.type === typeFilter
 
     let matchesDateRange = true
     if (dateRange.from && dateRange.to) {
-      const logDate = new Date(log.timestamp)
+      const logDate = new Date(log.createdAt)
       const fromDate = new Date(dateRange.from)
       const toDate = new Date(dateRange.to)
       matchesDateRange = logDate >= fromDate && logDate <= toDate
@@ -228,16 +170,55 @@ export default function ReportsPage() {
     return matchesSearch && matchesActor && matchesType && matchesDateRange
   })
 
+  function toCSV(rows: UILog[]): string {
+    const headers = [
+      'id',
+      'type',
+      'title',
+      'description',
+      'actorName',
+      'actorRole',
+      'createdAt',
+      'metadata',
+    ]
+    const escape = (v: unknown) => {
+      if (v === null || v === undefined) return ''
+      const str = String(v)
+      if (/[",\n]/.test(str)) return '"' + str.replace(/"/g, '""') + '"'
+      return str
+    }
+    const lines = [headers.join(',')]
+    for (const l of rows) {
+      lines.push(
+        [
+          l.id,
+          l.type,
+          l.title,
+          l.description || '',
+          l.actorName || '',
+          l.actorRole || '',
+          l.createdAt,
+          l.metadata ? JSON.stringify(l.metadata) : '',
+        ]
+          .map(escape)
+          .join(','),
+      )
+    }
+    return lines.join('\n')
+  }
+
   const handleDownloadReport = () => {
-    // Here you would implement the actual download functionality
-    console.log('Downloading report with filters:', {
-      searchTerm,
-      actorFilter,
-      typeFilter,
-      dateRange,
-    })
-    // For demo purposes, we'll just show an alert
-    alert('Report download started! (This is a demo)')
+    const csv = toCSV(filteredLogs)
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    const stamp = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19)
+    a.href = url
+    a.download = `activity-report-${stamp}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
   }
 
   const clearDateFilter = () => {
@@ -299,7 +280,7 @@ export default function ReportsPage() {
                 <SelectItem value="task_assigned">Task Assigned</SelectItem>
                 <SelectItem value="task_updated">Task Updated</SelectItem>
                 <SelectItem value="client_onboarded">Client Added</SelectItem>
-                <SelectItem value="worker_added">Worker Added</SelectItem>
+                <SelectItem value="worker_added">Tutor Added</SelectItem>
               </SelectContent>
             </Select>
 
@@ -358,7 +339,8 @@ export default function ReportsPage() {
         <CardHeader>
           <CardTitle className="text-lg">Activity Timeline</CardTitle>
           <CardDescription>
-            Recent system activities and changes ({filteredLogs.length} entries)
+            Recent system activities and changes (
+            {loading ? 'Loading...' : filteredLogs.length + ' entries'})
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -388,32 +370,27 @@ export default function ReportsPage() {
 
                         <p className="text-sm text-muted-foreground mb-2">{log.description}</p>
 
-                        {/* Activity Details */}
-                        {log.details && (
+                        {log.metadata && (
                           <div className="text-xs text-muted-foreground space-y-1">
-                            {log.type === 'task_completed' && (
+                            {log.type === 'task_completed' && log.metadata.clientName && (
                               <div className="flex flex-wrap gap-4">
-                                <span>Client: {log.details.clientName}</span>
-                                <span>Score: {log.details.score}%</span>
-                                <span>Platform: {log.details.platform}</span>
-                              </div>
-                            )}
-                            {log.type === 'client_onboarded' && (
-                              <div className="flex flex-wrap gap-4">
-                                <span>Platform: {log.details.platform}</span>
-                                <span>Course: {log.details.courseName}</span>
+                                <span>Client: {log.metadata.clientName}</span>
                               </div>
                             )}
                             {log.type === 'task_assigned' && (
                               <div className="flex flex-wrap gap-4">
-                                <span>Worker: {log.details.workerName}</span>
-                                <span>Client: {log.details.clientName}</span>
-                                <span>Type: {log.details.taskType}</span>
+                                {log.metadata.workerName && (
+                                  <span>Worker: {log.metadata.workerName}</span>
+                                )}
+                                {log.metadata.clientName && (
+                                  <span>Client: {log.metadata.clientName}</span>
+                                )}
                               </div>
                             )}
-                            {log.type === 'worker_edited' && (
-                              <div>Changes: {log.details.changes?.join(', ')}</div>
-                            )}
+                            {log.type === 'worker_edited' &&
+                              Array.isArray(log.metadata.changes) && (
+                                <div>Changes: {log.metadata.changes.join(', ')}</div>
+                              )}
                           </div>
                         )}
                       </div>
@@ -422,21 +399,21 @@ export default function ReportsPage() {
                       <div className="flex-shrink-0 text-right">
                         <div className="flex items-center gap-2 mb-1">
                           <Avatar className="h-6 w-6">
-                            <AvatarImage src="/placeholder.svg" alt={log.actor} />
+                            <AvatarImage src="/placeholder.svg" alt={log.actorName || 'User'} />
                             <AvatarFallback className="text-xs">
-                              {log.actor
+                              {(log.actorName || 'U')
                                 .split(' ')
                                 .map((n) => n[0])
                                 .join('')}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="text-xs font-medium">{log.actor}</span>
+                          <span className="text-xs font-medium">{log.actorName || '—'}</span>
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {formatTimestamp(log.timestamp)}
+                          {formatTimestamp(log.createdAt)}
                         </div>
                         <Badge variant="outline" className="text-xs mt-1">
-                          {log.actorRole}
+                          {log.actorRole || 'System'}
                         </Badge>
                       </div>
                     </div>
