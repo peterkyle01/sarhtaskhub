@@ -26,7 +26,9 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
           <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1 size-8 sm:size-7" />
             <div className="h-4 w-px bg-[var(--border)]" />
-            <h1 className="font-semibold text-[clamp(.95rem,2.5vw,1.1rem)] sm:text-lg">Dashboard</h1>
+            <h1 className="font-semibold text-[clamp(.95rem,2.5vw,1.1rem)] sm:text-lg">
+              Dashboard
+            </h1>
           </div>
         </header>
         <div className="flex-1 p-3 sm:p-6">{children}</div>

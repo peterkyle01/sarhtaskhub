@@ -16,12 +16,12 @@ import {
   SidebarRail,
   useSidebar,
 } from '@/components/ui/sidebar'
-import { Home, Users, Upload, FileText } from 'lucide-react'
+import { Home, Users, Upload } from 'lucide-react'
 import Link from 'next/link'
-import { ThemeToggle } from '@/components/custom/theme-toggle'
 import { LogoutButton } from '@/components/custom/logout-button'
 import { displayRole } from '@/lib/user-utils'
 import type { Config } from '@/payload-types'
+import { AppBrand } from '@/components/custom/app-brand'
 
 // Type alias for generated user type
 type AppUser = Config['user']
@@ -49,26 +49,8 @@ export function WorkerSidebar({ user }: { user: AppUser | null }) {
 
   return (
     <Sidebar className="border-r border-border/40 bg-card/50 backdrop-blur-xl text-[var(--sidebar-foreground)] transition-all duration-300 shadow-lg">
-      <SidebarHeader className="border-b border-border/20">
-        <div className="flex items-center justify-between gap-2 sm:gap-3 px-2 sm:px-4 py-2 sm:py-4">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg">
-              <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
-            </div>
-            <div className="flex flex-col min-w-0">
-              <span className="font-bold text-sm sm:text-base tracking-tight text-foreground truncate">
-                Sarh Task Hub
-              </span>
-            </div>
-          </div>
-          <ThemeToggle />
-        </div>
-
-        <div className="px-2 sm:px-4 pb-1 sm:pb-2">
-          <span className="text-[10px] w-fit mx-auto block uppercase text-muted-foreground font-semibold tracking-wider bg-secondary/50 px-2 py-0.5 rounded-full text-center">
-            Tutors Panel
-          </span>
-        </div>
+      <SidebarHeader className="border-b border-border/20 py-2 sm:py-3 px-2 sm:px-3">
+        <AppBrand panelLabel="Tutor" />
       </SidebarHeader>
 
       <SidebarContent className="px-1 sm:px-3 py-2 sm:py-4">

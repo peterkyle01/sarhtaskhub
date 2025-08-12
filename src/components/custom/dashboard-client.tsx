@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 // client dashboard component
 import { Bell, Calendar, CheckCircle, Clock, Users, AlertTriangle } from 'lucide-react'
@@ -96,7 +96,7 @@ export default function DashboardClient({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-  <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4">
         <Card className="bg-[var(--card)] border border-[var(--border)]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium">Total Clients</CardTitle>
@@ -134,23 +134,39 @@ export default function DashboardClient({
           </CardHeader>
           <CardContent>
             <div className="text-lg sm:text-2xl font-bold">{stats.dueThisWeek}</div>
-            <p className="text-[10px] sm:text-xs text-muted-foreground">{stats.dueToday} due today</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">
+              {stats.dueToday} due today
+            </p>
           </CardContent>
         </Card>
       </div>
-  <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2 bg-[var(--card)] border border-[var(--border)] overflow-hidden">
           <CardHeader>
             <CardTitle className="text-sm sm:text-base">Task Completion Overview</CardTitle>
-            <CardDescription className="text-xs sm:text-sm">Daily task completion vs pending tasks this week</CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
+              Daily task completion vs pending tasks this week
+            </CardDescription>
           </CardHeader>
           <CardContent className="overflow-hidden">
             <div className="w-full overflow-x-auto">
               <ChartContainer config={chartConfig} className="h-[250px] sm:h-[300px] min-w-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={taskChart} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-                    <XAxis dataKey="name" fontSize={12} tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-                    <YAxis fontSize={12} tick={{ fontSize: 12 }} axisLine={false} tickLine={false} width={30} />
+                    <XAxis
+                      dataKey="name"
+                      fontSize={12}
+                      tick={{ fontSize: 12 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      fontSize={12}
+                      tick={{ fontSize: 12 }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={30}
+                    />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Bar dataKey="completed" fill="var(--color-completed)" radius={[2, 2, 0, 0]} />
                     <Bar dataKey="pending" fill="var(--color-pending)" radius={[2, 2, 0, 0]} />
@@ -163,14 +179,27 @@ export default function DashboardClient({
         <Card className="bg-[var(--card)] border border-[var(--border)] overflow-hidden">
           <CardHeader>
             <CardTitle className="text-sm sm:text-base">Client Distribution</CardTitle>
-            <CardDescription className="text-xs sm:text-sm">Active vs inactive clients</CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
+              Active vs inactive clients
+            </CardDescription>
           </CardHeader>
           <CardContent className="overflow-hidden">
             <div className="w-full flex justify-center">
-              <ChartContainer config={{}} className="h-[200px] sm:h-[250px] lg:h-[300px] w-full max-w-[280px] sm:max-w-none">
+              <ChartContainer
+                config={{}}
+                className="h-[200px] sm:h-[250px] lg:h-[300px] w-full max-w-[280px] sm:max-w-none"
+              >
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={clientDistribution} cx="50%" cy="50%" innerRadius={30} outerRadius={60} paddingAngle={2} dataKey="value">
+                    <Pie
+                      data={clientDistribution}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={30}
+                      outerRadius={60}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
                       {clientDistribution.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
@@ -183,7 +212,10 @@ export default function DashboardClient({
             <div className="flex justify-center gap-2 sm:gap-4 mt-3 sm:mt-4 flex-wrap">
               {clientDistribution.map((item) => (
                 <div key={item.name} className="flex items-center gap-1 sm:gap-2">
-                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full" style={{ backgroundColor: item.color }} />
+                  <div
+                    className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full"
+                    style={{ backgroundColor: item.color }}
+                  />
                   <span className="text-[10px] sm:text-sm text-muted-foreground">
                     {item.name} ({item.value}%)
                   </span>
@@ -196,7 +228,9 @@ export default function DashboardClient({
       <Card className="bg-[var(--card)] border border-[var(--border)]">
         <CardHeader>
           <CardTitle className="text-sm sm:text-base">Recent Activity</CardTitle>
-          <CardDescription className="text-xs sm:text-sm">Latest updates from your task hub</CardDescription>
+          <CardDescription className="text-xs sm:text-sm">
+            Latest updates from your task hub
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3 sm:space-y-4">
