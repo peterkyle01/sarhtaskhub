@@ -14,7 +14,18 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Users, UserCheck, User, ChevronDown, ChevronUp, Eye } from 'lucide-react'
-import { updateUserDetailsAction } from '@/server-actions/user-actions'
+import { updateUserDetailsAction, deleteUserAction } from '@/server-actions/user-actions'
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog'
 import { getRoleBadgeColor } from '@/lib/user-utils'
 import { Input } from '@/components/ui/input'
 
@@ -42,6 +53,8 @@ export function UserAccordion({ users }: UserAccordionProps) {
     role: string
     password: string
   }>({ fullName: '', phone: '', role: 'ADMIN', password: '' })
+  const [deleteTargetUserId, setDeleteTargetUserId] = useState<string | null>(null)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   const toggleUserExpansion = (userId: string) => {
     setExpandedUserId(expandedUserId === userId ? null : userId)
@@ -377,7 +390,56 @@ export function UserAccordion({ users }: UserAccordionProps) {
                       </Card>
                     </div>
 
-                    {/* Removed bottom action buttons & panels now redundant */}
+                    <div className="flex justify-end gap-2">
+                      <AlertDialog
+                        open={isDeleteDialogOpen}
+                        onOpenChange={(open) => {
+                          setIsDeleteDialogOpen(open)
+                          if (!open) setDeleteTargetUserId(null)
+                        }}
+                      >
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            className="text-red-500 hover:text-red-600"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setDeleteTargetUserId(userProfile.id)
+                              setIsDeleteDialogOpen(true)
+                            }}
+                          >
+                            Delete User
+                          </Button>
+                        </AlertDialogTrigger>
+
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete user?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. Deleting this user will also remove any
+                              linked worker or client profiles. Are you sure you want to continue?
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <form action={deleteUserAction}>
+                              <input type="hidden" name="userId" value={deleteTargetUserId || ''} />
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => {
+                                  // Allow the form to submit by leaving dialog open — the form will POST
+                                  setIsDeleteDialogOpen(false)
+                                }}
+                                asChild
+                              >
+                                <button type="submit" className="inline-block">
+                                  Delete
+                                </button>
+                              </AlertDialogAction>
+                            </form>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                 </TableCell>
               </TableRow>

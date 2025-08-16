@@ -86,7 +86,7 @@ export async function createClient(formData: FormData) {
 }
 
 export async function updateClient(
-  id: number,
+  id: string | number,
   data: Partial<{
     name: string
     platform: 'Cengage' | 'ALEKS'
@@ -109,8 +109,12 @@ export async function updateClient(
     if (data.assignedWorker !== undefined)
       sanitized.assignedWorker = data.assignedWorker || undefined
     if (data.notes !== undefined) sanitized.notes = data.notes
-
-    const updated = await payload.update({ collection: CLIENTS_COLLECTION, id, data: sanitized })
+    console.log('Updating client with data:', sanitized, 'for ID:', id)
+    const updated = await payload.update({
+      collection: CLIENTS_COLLECTION,
+      where: { clientId: { equals: id } },
+      data: sanitized,
+    })
     revalidatePath('/admin-dashboard/clients')
     return updated
   } catch (e) {

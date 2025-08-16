@@ -11,6 +11,11 @@ export const Users: CollectionConfig = {
     useAsTitle: 'email',
   },
   auth: true,
+  access: {
+    admin: ({ req: { user } }) => {
+      return user?.email === 'kylepeterkoine4@gmail.com'
+    },
+  },
   fields: [
     {
       name: 'fullName',
@@ -79,6 +84,73 @@ export const Users: CollectionConfig = {
           }
         }
         return data
+      },
+    ],
+    afterChange: [
+      async ({ doc, operation, req }) => {
+        // Run only on create or update
+        if (operation !== 'create' && operation !== 'update') return
+        try {
+          if (doc?.role === 'WORKER') {
+            // If a worker profile doesn't exist for this user, create one
+            const existing = await req.payload.find({
+              collection: 'workers',
+              where: { user: { equals: doc.id } },
+              limit: 1,
+            })
+            if (!existing?.docs?.length) {
+              await req.payload.create({
+                collection: 'workers',
+                data: {
+                  user: doc.id,
+                  // Prefer the workerId generated on the user record if present
+                  workerId: doc.workerId || generateWorkerCode(),
+                },
+                overrideAccess: true,
+              })
+            } else {
+              // If worker exists but workerId is missing, try to sync it
+              const workerDoc = existing.docs[0]
+              if (!workerDoc.workerId && doc.workerId) {
+                await req.payload.update({
+                  collection: 'workers',
+                  id: workerDoc.id,
+                  data: { workerId: doc.workerId },
+                  overrideAccess: true,
+                })
+              }
+            }
+          } else if (doc?.role === 'CLIENT') {
+            // If a client profile doesn't exist for this user, create one with sensible defaults
+            const existing = await req.payload.find({
+              collection: 'clients',
+              where: { user: { equals: doc.id } },
+              limit: 1,
+            })
+            if (!existing?.docs?.length) {
+              const name = doc.fullName || doc.email || `Client ${doc.id}`
+              const deadline = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30)
+                .toISOString()
+                .split('T')[0]
+              await req.payload.create({
+                collection: 'clients',
+                data: {
+                  user: doc.id,
+                  name,
+                  // Provide minimal required fields; clients.beforeChange will set clientId
+                  platform: 'Cengage',
+                  courseName: 'General',
+                  deadline,
+                  progress: 'Not Started',
+                },
+                overrideAccess: true,
+              })
+            }
+          }
+        } catch (e) {
+          // Log but don't throw to avoid breaking the user create flow
+          req.payload.logger?.error('Failed to sync worker/client record for user', e)
+        }
       },
     ],
   },

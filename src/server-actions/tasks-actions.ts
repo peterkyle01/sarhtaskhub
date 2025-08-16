@@ -52,7 +52,7 @@ export async function createTask(formData: FormData) {
   const client = normNumber(clientRaw)
   if (client == null) throw new Error('Invalid client reference')
   const worker = workerRaw ? normNumber(workerRaw) : undefined
-
+  console.log('data sent', { client, platform, taskType, dueDate, worker, notes })
   try {
     const created = await payload.create({
       collection: TASKS_COLLECTION,
@@ -144,13 +144,18 @@ export async function listTasks(): Promise<GeneratedTypes['collections']['tasks'
 
 // Fetch clients & workers to populate selects
 export async function fetchClientsAndWorkers(): Promise<{
-  clients: GeneratedTypes['collections']['clients'][]
+  clients: GeneratedTypes['collections']['users'][]
   workers: GeneratedTypes['collections']['users'][]
 }> {
   try {
     const payload = await getPayload({ config })
     const [clientsRes, workersRes] = await Promise.all([
-      payload.find({ collection: 'clients', limit: 500, sort: 'name' }),
+      payload.find({
+        collection: 'users',
+        where: { role: { equals: 'CLIENT' } },
+        limit: 500,
+        sort: 'fullName',
+      }),
       payload.find({
         collection: 'users',
         where: { role: { equals: 'WORKER' } },
@@ -159,7 +164,7 @@ export async function fetchClientsAndWorkers(): Promise<{
       }),
     ])
     return {
-      clients: clientsRes.docs as GeneratedTypes['collections']['clients'][],
+      clients: clientsRes.docs as GeneratedTypes['collections']['users'][],
       workers: workersRes.docs as GeneratedTypes['collections']['users'][],
     }
   } catch (e) {

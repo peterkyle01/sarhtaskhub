@@ -170,7 +170,7 @@ export default function ClientsClient({ initialClients, workers, clientUsers = [
     )
     startTransition(async () => {
       try {
-        await updateClient(Number(updatedClient.id), {
+        await updateClient(updatedClient.id, {
           platform: updatedClient.platform as 'Cengage' | 'ALEKS' | undefined,
           courseName: updatedClient.courseName,
           deadline: updatedClient.deadline,

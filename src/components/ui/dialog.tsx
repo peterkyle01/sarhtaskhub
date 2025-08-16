@@ -53,7 +53,8 @@ function DialogContent({
         data-slot="dialog-content"
         className={cn(
           // Flexbox centering ensures consistent vertical alignment even when transforms fail on some mobile browsers.
-          'fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none',
+          // Use transform-based centering to properly center relative to the viewport regardless of sidebar
+          'fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 p-4 pointer-events-none',
           className,
         )}
         {...props}

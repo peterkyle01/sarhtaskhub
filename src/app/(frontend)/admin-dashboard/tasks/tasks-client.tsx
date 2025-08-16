@@ -74,7 +74,7 @@ interface TaskDoc {
 
 interface ClientDoc {
   id: number
-  name?: string
+  fullName?: string
 }
 interface WorkerDoc {
   id: number
@@ -143,7 +143,6 @@ function getDueDateStatus(dueDate: string) {
 
 export default function TasksClient({ initialTasks, initialClients, initialWorkers }: Props) {
   const [tasks, setTasks] = useState<TaskDoc[]>(initialTasks)
-  const [clients] = useState<ClientDoc[]>(initialClients)
   const [workers] = useState<WorkerDoc[]>(initialWorkers)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -238,7 +237,7 @@ export default function TasksClient({ initialTasks, initialClients, initialWorke
       }
     })
   }
-
+  console.log('InitialClients:', initialClients)
   function handleUpdateStatus() {
     startTransition(async () => {
       try {
@@ -337,9 +336,9 @@ export default function TasksClient({ initialTasks, initialClients, initialWorke
                           <SelectValue placeholder="Select client" />
                         </SelectTrigger>
                         <SelectContent>
-                          {clients.map((c) => (
+                          {initialClients.map((c) => (
                             <SelectItem key={c.id} value={String(c.id)}>
-                              {c.name || `Client ${c.id}`}
+                              {c.fullName || `Client ${c.id}`}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -400,7 +399,7 @@ export default function TasksClient({ initialTasks, initialClients, initialWorke
                       onValueChange={(value) => setNewTask({ ...newTask, worker: value })}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select tutor (optional)" />
+                        <SelectValue placeholder="Select tutor" />
                       </SelectTrigger>
                       <SelectContent>
                         {workers.map((w) => (

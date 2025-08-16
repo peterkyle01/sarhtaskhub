@@ -3,6 +3,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/s
 import { getCurrentUser } from '@/server-actions/user-actions'
 import { AdminSidebar } from './admin-sidebar'
 import { AutoCollapseWrapper } from './auto-collapse-wrapper'
+import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -15,7 +16,6 @@ export const fetchCache = 'force-no-store'
 // Use alias for clarity.
 export default async function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser()
-
   return (
     <SidebarProvider>
       <AutoCollapseWrapper>

@@ -28,6 +28,7 @@ interface TaskDoc {
 export default async function TasksPage() {
   const [tasks, cw] = await Promise.all([listTasks(), fetchClientsAndWorkers()])
   const tasksTyped = tasks as TaskDoc[]
+  console.log('Clients', cw)
   return (
     <TasksClient
       initialTasks={tasksTyped}
