@@ -15,7 +15,7 @@ import type { GeneratedTypes } from 'payload'
 
 // Transform Payload user to match our interface
 interface UserProfile {
-  id: string
+  id: number
   email: string
   name: string
   role: string
@@ -26,7 +26,7 @@ interface UserProfile {
 
 function transformPayloadUser(user: GeneratedTypes['user']): UserProfile {
   return {
-    id: user.id.toString(),
+    id: user.id,
     email: user.email,
     name: user.fullName,
     role: user.role.toLowerCase(), // Convert ADMIN/TUTOR/CLIENT to admin/tutor/client for consistency
@@ -120,7 +120,7 @@ export default async function UserPage() {
                   'use server'
                   if (user) {
                     const { updateUserRole } = await import('@/server-actions/user-actions')
-                    await updateUserRole(parseInt(user.id), 'ADMIN')
+                    await updateUserRole(user.id, 'ADMIN')
                   }
                 }}
               >
