@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-// Activity logs collection to store system events (task updates, client onboarding, worker profile changes, etc.)
+// Activity logs collection to store system events (task updates, client onboarding, tutor profile changes, etc.)
 export const ActivityLogs: CollectionConfig = {
   slug: 'activity-logs',
   admin: {
@@ -25,8 +25,8 @@ export const ActivityLogs: CollectionConfig = {
         { label: 'Task Assigned', value: 'task_assigned' },
         { label: 'Task Completed', value: 'task_completed' },
         { label: 'Client Onboarded', value: 'client_onboarded' },
-        { label: 'Tutor Added', value: 'worker_added' },
-        { label: 'Worker Edited', value: 'worker_edited' },
+        { label: 'Tutor Added', value: 'tutor_added' },
+        { label: 'Tutor Edited', value: 'tutor_edited' },
       ],
     },
     { name: 'title', type: 'text', required: true },
@@ -34,7 +34,7 @@ export const ActivityLogs: CollectionConfig = {
     { name: 'actor', type: 'relationship', relationTo: 'users', required: false },
     { name: 'task', type: 'relationship', relationTo: 'tasks', required: false },
     { name: 'client', type: 'relationship', relationTo: 'clients', required: false },
-    { name: 'worker', type: 'relationship', relationTo: 'users', required: false },
+    { name: 'tutor', type: 'relationship', relationTo: 'users', required: false },
     { name: 'metadata', type: 'json', required: false },
   ],
 }

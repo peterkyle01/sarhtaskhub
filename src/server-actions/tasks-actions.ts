@@ -38,7 +38,7 @@ export async function createTask(formData: FormData) {
   const platformRaw = normText(formData.get('platform'), true)
   const taskTypeRaw = normText(formData.get('taskType'), true)
   const dueDate = normText(formData.get('dueDate'), true)
-  const workerRaw = normText(formData.get('worker'))
+  const tutorRaw = normText(formData.get('tutor'))
   const notes = normText(formData.get('notes'))
 
   if (!clientRaw || !platformRaw || !taskTypeRaw || !dueDate)
@@ -51,8 +51,8 @@ export async function createTask(formData: FormData) {
   const taskType = taskTypeRaw as TaskType
   const client = normNumber(clientRaw)
   if (client == null) throw new Error('Invalid client reference')
-  const worker = workerRaw ? normNumber(workerRaw) : undefined
-  console.log('data sent', { client, platform, taskType, dueDate, worker, notes })
+  const tutor = tutorRaw ? normNumber(tutorRaw) : undefined
+  console.log('data sent', { client, platform, taskType, dueDate, tutor, notes })
   try {
     const created = await payload.create({
       collection: TASKS_COLLECTION,
@@ -62,7 +62,7 @@ export async function createTask(formData: FormData) {
         taskType,
         dueDate,
         status: 'Pending' as Status,
-        worker: worker ?? undefined,
+        tutor: tutor ?? undefined,
         notes,
       },
     })
@@ -74,23 +74,23 @@ export async function createTask(formData: FormData) {
   }
 }
 
-// Assign / reassign a worker to a task
-export async function assignWorkerToTask(
+// Assign / reassign a tutor to a task
+export async function assignTutorToTask(
   taskId: number,
-  workerId: number | null,
+  tutorId: number | null,
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const payload = await getPayload({ config })
     await payload.update({
       collection: TASKS_COLLECTION,
       id: taskId,
-      data: { worker: workerId ?? null },
+      data: { tutor: tutorId ?? null },
     })
     revalidatePath('/admin-dashboard/tasks')
     return { success: true }
   } catch (e: unknown) {
-    console.error('Failed to assign worker', e)
-    return { success: false, error: e instanceof Error ? e.message : 'Failed to assign worker' }
+    console.error('Failed to assign tutor', e)
+    return { success: false, error: e instanceof Error ? e.message : 'Failed to assign tutor' }
   }
 }
 
@@ -133,7 +133,7 @@ export async function listTasks(): Promise<GeneratedTypes['collections']['tasks'
       collection: TASKS_COLLECTION,
       limit: 100,
       sort: '-createdAt',
-      depth: 1, // include related client & worker docs
+      depth: 1, // include related client & tutor docs
     })
     return result.docs
   } catch (e) {
@@ -142,14 +142,14 @@ export async function listTasks(): Promise<GeneratedTypes['collections']['tasks'
   }
 }
 
-// Fetch clients & workers to populate selects
-export async function fetchClientsAndWorkers(): Promise<{
+// Fetch clients & tutors to populate selects
+export async function fetchClientsAndTutors(): Promise<{
   clients: GeneratedTypes['collections']['users'][]
-  workers: GeneratedTypes['collections']['users'][]
+  tutors: GeneratedTypes['collections']['users'][]
 }> {
   try {
     const payload = await getPayload({ config })
-    const [clientsRes, workersRes] = await Promise.all([
+    const [clientsRes, tutorsRes] = await Promise.all([
       payload.find({
         collection: 'users',
         where: { role: { equals: 'CLIENT' } },
@@ -158,18 +158,18 @@ export async function fetchClientsAndWorkers(): Promise<{
       }),
       payload.find({
         collection: 'users',
-        where: { role: { equals: 'WORKER' } },
+        where: { role: { equals: 'TUTOR' } },
         limit: 500,
         sort: 'fullName',
       }),
     ])
     return {
       clients: clientsRes.docs as GeneratedTypes['collections']['users'][],
-      workers: workersRes.docs as GeneratedTypes['collections']['users'][],
+      tutors: tutorsRes.docs as GeneratedTypes['collections']['users'][],
     }
   } catch (e) {
-    console.error('Failed to fetch clients/workers', e)
-    return { clients: [], workers: [] }
+    console.error('Failed to fetch clients/tutors', e)
+    return { clients: [], tutors: [] }
   }
 }
 

@@ -21,7 +21,7 @@ import {
 import { cn } from '@/lib/utils'
 
 // Types
-import { listAssignedTasksForCurrentWorker } from '@/server-actions/worker-actions'
+import { listAssignedTasksForCurrentTutor } from '@/server-actions/tutors-actions'
 import { updateTaskStatus } from '@/server-actions/tasks-actions'
 
 interface AssignedTask {
@@ -129,7 +129,7 @@ export default function SubmitTaskPage() {
     let active = true
     async function load() {
       try {
-        const data = await listAssignedTasksForCurrentWorker()
+        const data = await listAssignedTasksForCurrentTutor()
         type RawTask = {
           id: number
           clientName: string
@@ -199,7 +199,7 @@ export default function SubmitTaskPage() {
       })
       setSubmissionSuccess(true)
       // Refresh tasks list
-      const refreshed = await listAssignedTasksForCurrentWorker()
+      const refreshed = await listAssignedTasksForCurrentTutor()
       type RawTask = {
         id: number
         clientName: string

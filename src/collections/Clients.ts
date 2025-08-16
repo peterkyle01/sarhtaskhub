@@ -1,31 +1,26 @@
 import type { CollectionConfig } from 'payload'
 
-// Utility to generate sequential-like IDs (e.g., CL001) - simplistic, consider a dedicated sequence in production
-function generateClientCode(): string {
-  return 'CL' + Date.now().toString().slice(-5)
-}
-
 export const Clients: CollectionConfig = {
   slug: 'clients',
   admin: {
     useAsTitle: 'name',
     defaultColumns: [
-      'clientId',
+      // removed clientId
       'user',
       'name',
       'platform',
       'courseName',
       'deadline',
       'progress',
-      'assignedWorker',
+      'assignedTutor',
     ],
   },
   access: {
     read: () => true,
     create: ({ req: { user } }) =>
-      !!user && 'role' in user && (user.role === 'ADMIN' || user.role === 'WORKER'),
+      !!user && 'role' in user && (user.role === 'ADMIN' || user.role === 'TUTOR'),
     update: ({ req: { user } }) =>
-      !!user && 'role' in user && (user.role === 'ADMIN' || user.role === 'WORKER'),
+      !!user && 'role' in user && (user.role === 'ADMIN' || user.role === 'TUTOR'),
     delete: ({ req: { user } }) => !!user && 'role' in user && user.role === 'ADMIN',
   },
   fields: [
@@ -43,21 +38,11 @@ export const Clients: CollectionConfig = {
         role: { equals: 'CLIENT' },
       },
     },
-    {
-      name: 'clientId',
-      type: 'text',
-      label: 'Client ID',
-      unique: true,
-      index: true,
-      admin: {
-        readOnly: true,
-        description: 'Auto-generated (e.g., CL12345)',
-      },
-    },
+    // removed clientId field
     {
       name: 'name',
       type: 'text',
-      required: true,
+      required: false,
       admin: {
         description: 'Internal/client project or account name.',
       },
@@ -65,7 +50,7 @@ export const Clients: CollectionConfig = {
     {
       name: 'platform',
       type: 'select',
-      required: true,
+      required: false,
       options: [
         { label: 'Cengage', value: 'Cengage' },
         { label: 'ALEKS', value: 'ALEKS' },
@@ -74,19 +59,19 @@ export const Clients: CollectionConfig = {
     {
       name: 'courseName',
       type: 'text',
-      required: true,
+      required: false,
       label: 'Course Name',
     },
     {
       name: 'deadline',
       type: 'date',
       label: 'Deadline',
-      required: true,
+      required: false,
     },
     {
       name: 'progress',
       type: 'select',
-      required: true,
+      required: false,
       defaultValue: 'Not Started',
       options: [
         { label: 'Not Started', value: 'Not Started' },
@@ -96,16 +81,16 @@ export const Clients: CollectionConfig = {
       ],
     },
     {
-      name: 'assignedWorker',
+      name: 'assignedTutor',
       type: 'relationship',
       relationTo: 'users',
-      label: 'Assigned Worker',
+      label: 'Assigned Tutor',
       required: false,
       admin: {
-        description: 'User with role WORKER',
+        description: 'User with role TUTOR',
       },
       filterOptions: {
-        role: { equals: 'WORKER' },
+        role: { equals: 'TUTOR' },
       },
     },
     {
@@ -118,11 +103,33 @@ export const Clients: CollectionConfig = {
     beforeChange: [
       async ({ data, operation, req }) => {
         if ((operation === 'create' || operation === 'update') && data.user) {
-          const userDoc = await req.payload.findByID({ collection: 'users', id: data.user })
-          if (userDoc?.role !== 'CLIENT') throw new Error('Linked user must have role CLIENT')
-        }
-        if (operation === 'create' && !data.clientId) {
-          data.clientId = generateClientCode()
+          try {
+            const userDoc = await req.payload.findByID({
+              collection: 'users',
+              id: data.user,
+              overrideAccess: true, // Add this to bypass access controls during sync
+            })
+            if (userDoc?.role !== 'CLIENT') {
+              req.payload.logger.warn(
+                `Client profile creation attempted for user ${data.user} with role ${userDoc?.role}`,
+              )
+              throw new Error('Linked user must have role CLIENT')
+            }
+          } catch (error) {
+            // If the user is not found, it might be a timing issue during user creation
+            // Log the error but allow the operation to continue if it's being created with overrideAccess
+            if (error instanceof Error && error.message.includes('Not Found')) {
+              req.payload.logger.warn(
+                `User ${data.user} not found during client profile creation - this may be a timing issue`,
+              )
+              // Only throw if this is not an automated sync operation
+              if (!req.context?.skipUserValidation) {
+                throw error
+              }
+            } else {
+              throw error
+            }
+          }
         }
         return data
       },
@@ -132,7 +139,7 @@ export const Clients: CollectionConfig = {
         try {
           const actorId =
             req.user && 'id' in req.user ? (req.user as unknown as { id: number }).id : undefined
-          const clientName = doc.name || doc.clientId || doc.id
+          const clientName = doc.name || doc.id
           await req.payload.create({
             collection: 'activity-logs',
             data: {

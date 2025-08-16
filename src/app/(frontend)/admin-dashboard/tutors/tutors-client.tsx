@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
-import { createWorker, deleteWorker, WorkerDoc } from '@/server-actions/worker-actions'
+import { createTutor, deleteTutor, TutorDoc } from '@/server-actions/tutors-actions'
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -46,12 +46,12 @@ import {
 } from '@/components/ui/alert-dialog'
 
 interface Props {
-  initialWorkers: WorkerDoc[]
+  initialTutors: TutorDoc[]
   availableUsers: { id: number; fullName?: string; email?: string }[]
 }
 
-function performanceScore(w: WorkerDoc): number {
-  return w.performance?.overallScore ?? 0
+function performanceScore(t: TutorDoc): number {
+  return t.performance?.overallScore ?? 0
 }
 
 function ratingLabel(score: number) {
@@ -61,47 +61,41 @@ function ratingLabel(score: number) {
   return 'Needs Improvement'
 }
 
-export default function WorkersClient({ initialWorkers, availableUsers }: Props) {
-  // Whether add new worker functionality should be enabled
+export default function TutorsClient({ initialTutors, availableUsers }: Props) {
+  // Whether add new tutor functionality should be enabled
   const canAdd = availableUsers.length > 0
-  const [workers, setWorkers] = useState<WorkerDoc[]>(initialWorkers)
+  const [tutors, setTutors] = useState<TutorDoc[]>(initialTutors)
   const [searchTerm, setSearchTerm] = useState('')
   const [performanceFilter, setPerformanceFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isTaskHistoryModalOpen, setIsTaskHistoryModalOpen] = useState(false)
-  const [selectedWorker, setSelectedWorker] = useState<WorkerDoc | null>(null)
+  const [selectedTutor, setSelectedTutor] = useState<TutorDoc | null>(null)
   const [newUserId, setNewUserId] = useState<string>('')
   const [_, startTransition] = useTransition()
 
   const itemsPerPage = 6
 
-  const filtered = workers.filter((w) => {
-    const s = searchTerm.toLowerCase()
-    const matchesSearch =
-      w.fullName.toLowerCase().includes(s) ||
-      w.email.toLowerCase().includes(s) ||
-      (w.workerId || '').toLowerCase().includes(s)
-    const score = performanceScore(w)
-    const matchesPerf =
-      performanceFilter === 'all' ||
-      (performanceFilter === 'excellent' && score >= 90) ||
-      (performanceFilter === 'good' && score >= 80 && score < 90) ||
-      (performanceFilter === 'average' && score >= 70 && score < 80) ||
-      (performanceFilter === 'poor' && score < 70)
-    return matchesSearch && matchesPerf
+  const filtered = tutors.filter((t) => {
+    if (!searchTerm) return true
+    const query = searchTerm.toLowerCase()
+    return (
+      t.fullName?.toLowerCase().includes(query) ||
+      t.email?.toLowerCase().includes(query) ||
+      t.tutorId?.toLowerCase().includes(query)
+    )
   })
 
   const totalPages = Math.ceil(filtered.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const paginated = filtered.slice(startIndex, startIndex + itemsPerPage)
 
-  function handleAddWorker() {
+  function handleAddTutor() {
     startTransition(async () => {
       try {
         if (!newUserId) return
-        const created = await createWorker({ userId: Number(newUserId) })
-        if (created) setWorkers((prev) => [created, ...prev])
+        const created = await createTutor({ userId: Number(newUserId) })
+        if (created) setTutors((prev) => [created, ...prev])
         setIsAddModalOpen(false)
         setNewUserId('')
       } catch (e) {
@@ -112,8 +106,8 @@ export default function WorkersClient({ initialWorkers, availableUsers }: Props)
 
   function handleDelete(id: number) {
     startTransition(async () => {
-      const ok = await deleteWorker(id)
-      if (ok) setWorkers((prev) => prev.filter((w) => w.id !== id))
+      const ok = await deleteTutor(id)
+      if (ok) setTutors((prev) => prev.filter((t) => t.id !== id))
     })
   }
 
@@ -157,7 +151,7 @@ export default function WorkersClient({ initialWorkers, availableUsers }: Props)
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button type="submit" onClick={handleAddWorker}>
+                    <Button type="submit" onClick={handleAddTutor}>
                       Add Tutor
                     </Button>
                   </DialogFooter>
@@ -203,24 +197,24 @@ export default function WorkersClient({ initialWorkers, availableUsers }: Props)
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginated.map((w) => {
-                  const score = performanceScore(w)
-                  const isSynthetic = w.id < 0 // negative id means no actual profile document yet
+                {paginated.map((t) => {
+                  const score = performanceScore(t)
+                  const isSynthetic = t.id < 0 // negative id means no actual profile document yet
                   return (
-                    <TableRow key={w.id} className={isSynthetic ? 'opacity-80' : ''}>
+                    <TableRow key={t.id} className={isSynthetic ? 'opacity-80' : ''}>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10">
-                            <AvatarImage src={'/placeholder.svg'} alt={w.fullName} />
+                            <AvatarImage src={'/placeholder.svg'} alt={t.fullName} />
                             <AvatarFallback>
-                              {w.fullName
+                              {t.fullName
                                 .split(' ')
                                 .map((n) => n[0])
                                 .join('')}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-medium">{w.fullName}</div>
+                            <div className="font-medium">{t.fullName}</div>
                             <div className="text-xs text-muted-foreground">
                               {ratingLabel(score)}
                               {isSynthetic && ' (no profile)'}
@@ -228,8 +222,8 @@ export default function WorkersClient({ initialWorkers, availableUsers }: Props)
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="font-medium">{w.workerId || '-'}</TableCell>
-                      <TableCell>{w.email}</TableCell>
+                      <TableCell className="font-medium">{t.tutorId || '-'}</TableCell>
+                      <TableCell>{t.email}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Progress value={score} className="w-16 h-2" />
@@ -237,7 +231,7 @@ export default function WorkersClient({ initialWorkers, availableUsers }: Props)
                         </div>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        {new Date(w.createdAt).toLocaleDateString()}
+                        {new Date(t.createdAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -245,7 +239,7 @@ export default function WorkersClient({ initialWorkers, availableUsers }: Props)
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              setSelectedWorker(w)
+                              setSelectedTutor(t)
                               setIsTaskHistoryModalOpen(true)
                             }}
                           >
@@ -270,7 +264,7 @@ export default function WorkersClient({ initialWorkers, availableUsers }: Props)
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Delete Tutor</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      Are you sure you want to delete {w.fullName}? This action
+                                      Are you sure you want to delete {t.fullName}? This action
                                       cannot be undone.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
@@ -278,7 +272,7 @@ export default function WorkersClient({ initialWorkers, availableUsers }: Props)
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                                     <AlertDialogAction
                                       className="bg-red-600 hover:bg-red-700"
-                                      onClick={() => handleDelete(w.id)}
+                                      onClick={() => handleDelete(t.id)}
                                     >
                                       Delete
                                     </AlertDialogAction>
@@ -340,7 +334,7 @@ export default function WorkersClient({ initialWorkers, availableUsers }: Props)
       <Dialog open={isTaskHistoryModalOpen} onOpenChange={setIsTaskHistoryModalOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Task History - {selectedWorker?.fullName}</DialogTitle>
+            <DialogTitle>Task History - {selectedTutor?.fullName}</DialogTitle>
             <DialogDescription>Coming soon: detailed tutor task history.</DialogDescription>
           </DialogHeader>
           <div className="py-4 text-sm text-muted-foreground">No history loaded.</div>

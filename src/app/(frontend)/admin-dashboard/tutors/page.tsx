@@ -1,38 +1,37 @@
-import WorkersClient from './tutors-client'
+import TutorsClient from './tutors-client'
 import { getPayload } from 'payload'
 import config from '@payload-config'
-import { listWorkers } from '@/server-actions/worker-actions'
+import { listTutors } from '@/server-actions/tutors-actions'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 export const fetchCache = 'force-no-store'
 
-interface BaseWorkerUser {
+interface BaseTutorUser {
   id: number
   fullName?: string
   email?: string
-  workerId?: string // newly added field from Users collection
   createdAt: string
   updatedAt: string
 }
 
-export default async function WorkersPage() {
+export default async function TutorsPage() {
   const payload = await getPayload({ config })
 
-  // All base users that have role WORKER (displayed as Tutor in UI)
+  // All base users that have role TUTOR
   const baseUsersRes = await payload.find({
     collection: 'users',
-    where: { role: { equals: 'WORKER' } },
+    where: { role: { equals: 'TUTOR' } },
     limit: 500,
     sort: '-createdAt',
   })
 
-  // Existing worker profile documents (may be a subset)
-  const workerProfiles = await listWorkers()
+  // Existing tutor profile documents (may be a subset)
+  const tutorProfiles = await listTutors()
 
   // Map existing profiles by their related base user id
-  const profileByUserId = new Map<number, (typeof workerProfiles)[number]>()
-  for (const p of workerProfiles) {
+  const profileByUserId = new Map<number, (typeof tutorProfiles)[number]>()
+  for (const p of tutorProfiles) {
     const userId =
       typeof p.user === 'object' && p.user
         ? p.user.id
@@ -42,14 +41,13 @@ export default async function WorkersPage() {
     if (userId) profileByUserId.set(userId, p)
   }
 
-  // Combine: every base user becomes a worker entry (even without a profile)
-  const allWorkers = (baseUsersRes.docs as BaseWorkerUser[]).map((u) => {
+  // Combine: every base user becomes a tutor entry (even without a profile)
+  const allTutors = (baseUsersRes.docs as BaseTutorUser[]).map((u) => {
     const profile = profileByUserId.get(u.id)
-    const combinedWorkerId = profile?.workerId || u.workerId // prefer profile workerId, fallback to base user
     if (profile) {
       return {
         id: profile.id,
-        workerId: combinedWorkerId,
+        tutorId: profile.tutorId, // Use the tutorId from the profile (TU{id})
         user: profile.user,
         fullName: profile.fullName || u.fullName || '',
         email: profile.email || u.email || '',
@@ -60,7 +58,7 @@ export default async function WorkersPage() {
     }
     return {
       id: -u.id,
-      workerId: combinedWorkerId,
+      tutorId: `TU${u.id}`, // For users without profiles, use user ID
       user: u.id,
       fullName: u.fullName || '',
       email: u.email || '',
@@ -71,10 +69,10 @@ export default async function WorkersPage() {
   })
 
   return (
-    <WorkersClient
-      // Show every base user with role WORKER
-      initialWorkers={allWorkers}
-      // Empty availableUsers disables add-worker UI in client component
+    <TutorsClient
+      // Show every base user with role TUTOR
+      initialTutors={allTutors}
+      // Empty availableUsers disables add-tutor UI in client component
       availableUsers={[]}
     />
   )

@@ -40,7 +40,7 @@ interface DeadlineItem {
   priority: 'high' | 'medium' | 'low'
 }
 
-// Remove mock workerData and todayTasks declarations, replace with state-driven data
+// Remove mock tutorData and todayTasks declarations, replace with state-driven data
 
 function getStatusBadge(status: DashboardTask['status']) {
   const map: Record<DashboardTask['status'], string> = {
@@ -88,8 +88,8 @@ export default function TutorDashboard() {
     let active = true
     async function load() {
       try {
-        const { getWorkerDashboardData } = await import('@/server-actions/worker-actions')
-        const data = await getWorkerDashboardData()
+        const { getTutorDashboardData } = await import('@/server-actions/tutors-actions')
+        const data = await getTutorDashboardData()
         if (!active || !data) return
         setStats(data.stats)
         setTodayTasks(data.todayTasks)

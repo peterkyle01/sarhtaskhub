@@ -43,7 +43,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
   createTask,
-  assignWorkerToTask,
+  assignTutorToTask,
   updateTaskStatus,
   deleteTask,
 } from '@/server-actions/tasks-actions'
@@ -67,7 +67,7 @@ interface TaskDoc {
   taskType: string
   dueDate: string
   status: string
-  worker?: { id: number; fullName?: string } | number | null
+  tutor?: { id: number; fullName?: string } | number | null
   score?: number | null
   notes?: string | null
 }
@@ -76,7 +76,7 @@ interface ClientDoc {
   id: number
   fullName?: string
 }
-interface WorkerDoc {
+interface TutorDoc {
   id: number
   fullName?: string
 }
@@ -84,7 +84,7 @@ interface WorkerDoc {
 interface Props {
   initialTasks: TaskDoc[]
   initialClients: ClientDoc[]
-  initialWorkers: WorkerDoc[]
+  initialTutors: TutorDoc[]
 }
 
 function getStatusBadge(status: string) {
@@ -141,9 +141,9 @@ function getDueDateStatus(dueDate: string) {
   return { status: 'normal', color: 'text-muted-foreground' }
 }
 
-export default function TasksClient({ initialTasks, initialClients, initialWorkers }: Props) {
+export default function TasksClient({ initialTasks, initialClients, initialTutors }: Props) {
   const [tasks, setTasks] = useState<TaskDoc[]>(initialTasks)
-  const [workers] = useState<WorkerDoc[]>(initialWorkers)
+  const [tutors] = useState<TutorDoc[]>(initialTutors)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [platformFilter, setPlatformFilter] = useState('all')
@@ -158,10 +158,10 @@ export default function TasksClient({ initialTasks, initialClients, initialWorke
     platform: '',
     taskType: '',
     dueDate: '',
-    worker: '',
+    tutor: '',
     notes: '',
   })
-  const [assignTask, setAssignTask] = useState({ taskId: '', worker: '' })
+  const [assignTask, setAssignTask] = useState({ taskId: '', tutor: '' })
   const [updateStatusState, setUpdateStatusState] = useState({
     taskId: '',
     status: '',
@@ -176,12 +176,11 @@ export default function TasksClient({ initialTasks, initialClients, initialWorke
 
   const filteredTasks = tasks.filter((task) => {
     const clientName = typeof task.client === 'object' ? task.client.name || '' : ''
-    const workerName =
-      typeof task.worker === 'object' && task.worker ? task.worker.fullName || '' : ''
+    const tutorName = typeof task.tutor === 'object' && task.tutor ? task.tutor.fullName || '' : ''
     const matchesSearch =
       clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (task.taskId || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      workerName.toLowerCase().includes(searchTerm.toLowerCase())
+      tutorName.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = statusFilter === 'all' || task.status === statusFilter
     const matchesPlatform = platformFilter === 'all' || task.platform === platformFilter
     return matchesSearch && matchesStatus && matchesPlatform
@@ -192,7 +191,7 @@ export default function TasksClient({ initialTasks, initialClients, initialWorke
   const paginatedTasks = filteredTasks.slice(startIndex, startIndex + itemsPerPage)
 
   function resetNewTask() {
-    setNewTask({ client: '', platform: '', taskType: '', dueDate: '', worker: '', notes: '' })
+    setNewTask({ client: '', platform: '', taskType: '', dueDate: '', tutor: '', notes: '' })
   }
 
   function handleAddTask() {
@@ -201,7 +200,7 @@ export default function TasksClient({ initialTasks, initialClients, initialWorke
     fd.set('platform', newTask.platform)
     fd.set('taskType', newTask.taskType)
     fd.set('dueDate', newTask.dueDate)
-    if (newTask.worker) fd.set('worker', newTask.worker)
+    if (newTask.tutor) fd.set('tutor', newTask.tutor)
     if (newTask.notes) fd.set('notes', newTask.notes)
     startTransition(async () => {
       try {
@@ -218,14 +217,14 @@ export default function TasksClient({ initialTasks, initialClients, initialWorke
   function handleAssignTask() {
     startTransition(async () => {
       try {
-        if (assignTask.taskId && assignTask.worker) {
-          await assignWorkerToTask(Number(assignTask.taskId), Number(assignTask.worker))
+        if (assignTask.taskId && assignTask.tutor) {
+          await assignTutorToTask(Number(assignTask.taskId), Number(assignTask.tutor))
           setTasks((prev) =>
             prev.map((t) =>
               t.id === Number(assignTask.taskId)
                 ? {
                     ...t,
-                    worker: workers.find((w) => w.id === Number(assignTask.worker)) || t.worker,
+                    tutor: tutors.find((w) => w.id === Number(assignTask.tutor)) || t.tutor,
                   }
                 : t,
             ),
@@ -285,7 +284,7 @@ export default function TasksClient({ initialTasks, initialClients, initialWorke
     setSelectedTask(task)
     setAssignTask({
       taskId: String(task.id),
-      worker: typeof task.worker === 'object' && task.worker ? String(task.worker.id) : '',
+      tutor: typeof task.tutor === 'object' && task.tutor ? String(task.tutor.id) : '',
     })
     setIsAssignModalOpen(true)
   }
@@ -393,16 +392,16 @@ export default function TasksClient({ initialTasks, initialClients, initialWorke
                     </div>
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="worker">Assigned Tutor</Label>
+                    <Label htmlFor="tutor">Assigned Tutor</Label>
                     <Select
-                      value={newTask.worker}
-                      onValueChange={(value) => setNewTask({ ...newTask, worker: value })}
+                      value={newTask.tutor}
+                      onValueChange={(value) => setNewTask({ ...newTask, tutor: value })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select tutor" />
                       </SelectTrigger>
                       <SelectContent>
-                        {workers.map((w) => (
+                        {tutors.map((w) => (
                           <SelectItem key={w.id} value={String(w.id)}>
                             {w.fullName || `Tutor ${w.id}`}
                           </SelectItem>
@@ -490,9 +489,9 @@ export default function TasksClient({ initialTasks, initialClients, initialWorke
                     typeof task.client === 'object'
                       ? task.client.name || `Client ${task.client.id}`
                       : `Client ${task.client}`
-                  const workerName =
-                    typeof task.worker === 'object' && task.worker
-                      ? task.worker.fullName || `Tutor ${task.worker.id}`
+                  const tutorName =
+                    typeof task.tutor === 'object' && task.tutor
+                      ? task.tutor.fullName || `Tutor ${task.tutor.id}`
                       : ''
                   return (
                     <TableRow key={task.id} className="h-12">
@@ -523,7 +522,7 @@ export default function TasksClient({ initialTasks, initialClients, initialWorke
                       </TableCell>
                       <TableCell className="py-2">{getStatusBadge(task.status)}</TableCell>
                       <TableCell className="py-2 text-sm">
-                        {workerName || (
+                        {tutorName || (
                           <span className="text-muted-foreground italic">Unassigned</span>
                         )}
                       </TableCell>
@@ -647,16 +646,16 @@ export default function TasksClient({ initialTasks, initialClients, initialWorke
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="worker">Select Tutor</Label>
+              <Label htmlFor="tutor">Select Tutor</Label>
               <Select
-                value={assignTask.worker}
-                onValueChange={(value) => setAssignTask({ ...assignTask, worker: value })}
+                value={assignTask.tutor}
+                onValueChange={(value) => setAssignTask({ ...assignTask, tutor: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Choose a tutor" />
                 </SelectTrigger>
                 <SelectContent>
-                  {workers.map((w) => (
+                  {tutors.map((w) => (
                     <SelectItem key={w.id} value={String(w.id)}>
                       {w.fullName || `Tutor ${w.id}`}
                     </SelectItem>

@@ -11,7 +11,7 @@ export const fetchCache = 'force-no-store'
 
 // Remove incompatible interface extension; use generated type directly
 // type BaseUser = Config['user']
-// interface AppUser extends BaseUser { fullName?: string; role?: 'ADMIN' | 'WORKER'; profilePicture?: { url?: string } | null }
+// interface AppUser extends BaseUser { fullName?: string; role?: 'ADMIN' | 'TUTOR'; profilePicture?: { url?: string } | null }
 // Generated type already includes fullName, role, profilePicture (number | Media)
 // Use alias for clarity.
 export default async function AdminDashboardLayout({ children }: { children: React.ReactNode }) {

@@ -1,9 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-// Base Users collection: all actors (ADMIN, WORKER, CLIENT)
-function generateWorkerCode(): string {
-  return 'WK' + Date.now().toString().slice(-6)
-}
+// Base Users collection: all actors (ADMIN, TUTOR, CLIENT)
 
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -14,6 +11,32 @@ export const Users: CollectionConfig = {
   access: {
     admin: ({ req: { user } }) => {
       return user?.email === 'kylepeterkoine4@gmail.com'
+    },
+    create: ({ req: { user } }) => {
+      // Allow admins to create users
+      return user?.role === 'ADMIN'
+    },
+    read: ({ req: { user } }) => {
+      // Allow admins to read all users, others can only read their own profile
+      if (user?.role === 'ADMIN') return true
+      return {
+        id: {
+          equals: user?.id,
+        },
+      }
+    },
+    update: ({ req: { user } }) => {
+      // Allow admins to update any user, others can only update their own profile
+      if (user?.role === 'ADMIN') return true
+      return {
+        id: {
+          equals: user?.id,
+        },
+      }
+    },
+    delete: ({ req: { user } }) => {
+      // Only allow admins to delete users
+      return user?.role === 'ADMIN'
     },
   },
   fields: [
@@ -43,28 +66,14 @@ export const Users: CollectionConfig = {
       type: 'select',
       label: 'Role',
       required: true,
-      defaultValue: 'WORKER',
+      defaultValue: 'TUTOR',
       options: [
         { label: 'Admin', value: 'ADMIN' },
-        // Display Tutor instead of Worker (value remains WORKER for backend compatibility)
-        { label: 'Tutor', value: 'WORKER' },
+        { label: 'Tutor', value: 'TUTOR' },
         { label: 'Client', value: 'CLIENT' },
       ],
       admin: {
         description: 'Determines access level within the system.',
-      },
-    },
-    // Auto-generated workerId (displayed as Tutor ID in UI) for users whose role is WORKER
-    {
-      name: 'workerId',
-      type: 'text',
-      label: 'Tutor ID',
-      unique: true,
-      index: true,
-      admin: {
-        readOnly: true,
-        description: 'Auto-generated identifier for tutor accounts (e.g., WK123456).',
-        condition: (data) => data?.role === 'WORKER',
       },
     },
     {
@@ -77,12 +86,8 @@ export const Users: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [
-      async ({ data, operation }) => {
-        if ((operation === 'create' || operation === 'update') && data?.role === 'WORKER') {
-          if (!data.workerId) {
-            data.workerId = generateWorkerCode()
-          }
-        }
+      async ({ data }) => {
+        // No special logic needed for tutorId generation
         return data
       },
     ],
@@ -90,66 +95,122 @@ export const Users: CollectionConfig = {
       async ({ doc, operation, req }) => {
         // Run only on create or update
         if (operation !== 'create' && operation !== 'update') return
-        try {
-          if (doc?.role === 'WORKER') {
-            // If a worker profile doesn't exist for this user, create one
-            const existing = await req.payload.find({
-              collection: 'workers',
-              where: { user: { equals: doc.id } },
-              limit: 1,
-            })
-            if (!existing?.docs?.length) {
-              await req.payload.create({
-                collection: 'workers',
-                data: {
-                  user: doc.id,
-                  // Prefer the workerId generated on the user record if present
-                  workerId: doc.workerId || generateWorkerCode(),
-                },
+
+        // Add more detailed logging for debugging
+        req.payload.logger?.info(
+          `User sync hook - Operation: ${operation}, User ID: ${doc.id}, Role: ${doc?.role}`,
+        )
+
+        // Helper function to wait for user to be available with retry logic
+        const waitForUserAndCreateProfile = async (
+          userId: number,
+          role: 'TUTOR' | 'CLIENT',
+          maxRetries = 10,
+          baseDelay = 50,
+        ) => {
+          for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+              // First, verify the user exists and is accessible
+              const userExists = await req.payload.findByID({
+                collection: 'users',
+                id: userId,
                 overrideAccess: true,
               })
-            } else {
-              // If worker exists but workerId is missing, try to sync it
-              const workerDoc = existing.docs[0]
-              if (!workerDoc.workerId && doc.workerId) {
-                await req.payload.update({
-                  collection: 'workers',
-                  id: workerDoc.id,
-                  data: { workerId: doc.workerId },
+
+              if (!userExists) {
+                throw new Error(`User ${userId} not found`)
+              }
+
+              req.payload.logger?.info(`User ${userId} confirmed available on attempt ${attempt}`)
+
+              if (role === 'TUTOR') {
+                // Check if tutor profile already exists
+                const existing = await req.payload.find({
+                  collection: 'tutors',
+                  where: { user: { equals: userId } },
+                  limit: 1,
                   overrideAccess: true,
                 })
+
+                if (!existing?.docs?.length) {
+                  req.payload.logger?.info(`Creating tutor profile for user ${userId}`)
+                  await req.payload.create({
+                    collection: 'tutors',
+                    data: { user: userId },
+                    overrideAccess: true,
+                    context: { skipUserValidation: true },
+                  })
+                  req.payload.logger?.info(`Successfully created tutor profile for user ${userId}`)
+                } else {
+                  req.payload.logger?.info(`Tutor profile already exists for user ${userId}`)
+                }
+              } else if (role === 'CLIENT') {
+                // Check if client profile already exists
+                const existing = await req.payload.find({
+                  collection: 'clients',
+                  where: { user: { equals: userId } },
+                  limit: 1,
+                  overrideAccess: true,
+                })
+
+                if (!existing?.docs?.length) {
+                  const name = doc.fullName || doc.email || `Client ${userId}`
+                  const deadline = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30)
+                    .toISOString()
+                    .split('T')[0]
+                  req.payload.logger?.info(`Creating client profile for user ${userId}`)
+                  await req.payload.create({
+                    collection: 'clients',
+                    data: {
+                      user: userId,
+                      name,
+                      platform: 'Cengage',
+                      courseName: 'General',
+                      deadline,
+                      progress: 'Not Started',
+                    },
+                    overrideAccess: true,
+                    context: { skipUserValidation: true },
+                  })
+                  req.payload.logger?.info(`Successfully created client profile for user ${userId}`)
+                } else {
+                  req.payload.logger?.info(`Client profile already exists for user ${userId}`)
+                }
               }
-            }
-          } else if (doc?.role === 'CLIENT') {
-            // If a client profile doesn't exist for this user, create one with sensible defaults
-            const existing = await req.payload.find({
-              collection: 'clients',
-              where: { user: { equals: doc.id } },
-              limit: 1,
-            })
-            if (!existing?.docs?.length) {
-              const name = doc.fullName || doc.email || `Client ${doc.id}`
-              const deadline = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30)
-                .toISOString()
-                .split('T')[0]
-              await req.payload.create({
-                collection: 'clients',
-                data: {
-                  user: doc.id,
-                  name,
-                  // Provide minimal required fields; clients.beforeChange will set clientId
-                  platform: 'Cengage',
-                  courseName: 'General',
-                  deadline,
-                  progress: 'Not Started',
-                },
-                overrideAccess: true,
-              })
+
+              // If we get here, the operation was successful
+              return
+            } catch (error) {
+              const isLastAttempt = attempt === maxRetries
+              const delay = baseDelay * Math.pow(2, attempt - 1) // Exponential backoff
+
+              if (isLastAttempt) {
+                // On final attempt, log the error and give up
+                const errorMsg =
+                  error instanceof Error ? `${error.name}: ${error.message}` : String(error)
+                req.payload.logger?.error(
+                  `Failed to sync ${role.toLowerCase()} profile for user ${userId} after ${maxRetries} attempts: ${errorMsg}`,
+                )
+                return
+              }
+
+              // Log the retry attempt
+              req.payload.logger?.warn(
+                `Attempt ${attempt}/${maxRetries} failed for user ${userId} ${role.toLowerCase()} profile creation. Retrying in ${delay}ms...`,
+              )
+
+              // Wait before retrying
+              await new Promise((resolve) => setTimeout(resolve, delay))
             }
           }
-        } catch (e) {
-          // Log but don't throw to avoid breaking the user create flow
-          req.payload.logger?.error('Failed to sync worker/client record for user', e)
+        }
+
+        // Run profile creation asynchronously without blocking the main operation
+        if (doc?.role === 'TUTOR' || doc?.role === 'CLIENT') {
+          // Don't await this - let it run in the background
+          waitForUserAndCreateProfile(doc.id, doc.role as 'TUTOR' | 'CLIENT').catch((e) => {
+            req.payload.logger?.error(`Background profile creation failed for user ${doc.id}:`, e)
+          })
         }
       },
     ],

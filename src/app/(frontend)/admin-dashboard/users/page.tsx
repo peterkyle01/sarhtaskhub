@@ -29,7 +29,7 @@ function transformPayloadUser(user: GeneratedTypes['user']): UserProfile {
     id: user.id.toString(),
     email: user.email,
     name: user.fullName,
-    role: user.role.toLowerCase(), // Convert ADMIN/WORKER/CLIENT to admin/worker/client for consistency
+    role: user.role.toLowerCase(), // Convert ADMIN/TUTOR/CLIENT to admin/tutor/client for consistency
     created_at: user.createdAt,
     created_by: null, // Payload doesn't track who created users by default
     phone: user.phone,
@@ -68,8 +68,8 @@ function UserStatsCards({ stats }: { stats: ReturnType<typeof getUserStats> }) {
           <Users className="h-4 w-4 text-blue-600 dark:text-blue-300" />
         </CardHeader>
         <CardContent className="space-y-2">
-          <div className="text-2xl font-bold text-foreground">{stats.workers}</div>
-          <Badge className={getRoleBadgeColor('worker')}>Tutor Role</Badge>
+          <div className="text-2xl font-bold text-foreground">{stats.tutors}</div>
+          <Badge className={getRoleBadgeColor('tutor')}>Tutor Role</Badge>
         </CardContent>
       </Card>
 

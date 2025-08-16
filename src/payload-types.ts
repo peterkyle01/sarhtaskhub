@@ -70,7 +70,7 @@ export interface Config {
     users: User;
     media: Media;
     clients: Client;
-    workers: Worker;
+    tutors: Tutor;
     tasks: Task;
     'activity-logs': ActivityLog;
     'payload-locked-documents': PayloadLockedDocument;
@@ -82,7 +82,7 @@ export interface Config {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     clients: ClientsSelect<false> | ClientsSelect<true>;
-    workers: WorkersSelect<false> | WorkersSelect<true>;
+    tutors: TutorsSelect<false> | TutorsSelect<true>;
     tasks: TasksSelect<false> | TasksSelect<true>;
     'activity-logs': ActivityLogsSelect<false> | ActivityLogsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -135,11 +135,7 @@ export interface User {
   /**
    * Determines access level within the system.
    */
-  role: 'ADMIN' | 'WORKER' | 'CLIENT';
-  /**
-   * Auto-generated identifier for tutor accounts (e.g., WK123456).
-   */
-  workerId?: string | null;
+  role: 'ADMIN' | 'TUTOR' | 'CLIENT';
   profilePicture?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
@@ -190,36 +186,31 @@ export interface Client {
    */
   user: number | User;
   /**
-   * Auto-generated (e.g., CL12345)
-   */
-  clientId?: string | null;
-  /**
    * Internal/client project or account name.
    */
-  name: string;
-  platform: 'Cengage' | 'ALEKS';
-  courseName: string;
-  deadline: string;
-  progress: 'Not Started' | 'In Progress' | 'Completed' | 'Overdue';
+  name?: string | null;
+  platform?: ('Cengage' | 'ALEKS') | null;
+  courseName?: string | null;
+  deadline?: string | null;
+  progress?: ('Not Started' | 'In Progress' | 'Completed' | 'Overdue') | null;
   /**
-   * User with role WORKER
+   * User with role TUTOR
    */
-  assignedWorker?: (number | null) | User;
+  assignedTutor?: (number | null) | User;
   notes?: string | null;
   updatedAt: string;
   createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "workers".
+ * via the `definition` "tutors".
  */
-export interface Worker {
+export interface Tutor {
   id: number;
   /**
-   * Base user record (must have role WORKER).
+   * Base user record (must have role TUTOR).
    */
   user: number | User;
-  workerId?: string | null;
   tasksAssigned?: (number | Client)[] | null;
   performance?: {
     overallScore?: number | null;
@@ -250,9 +241,9 @@ export interface Task {
   dueDate: string;
   status: 'Pending' | 'In Progress' | 'Completed';
   /**
-   * Assigned worker (user with role WORKER)
+   * Assigned tutor (user with role TUTOR)
    */
-  worker?: (number | null) | User;
+  tutor?: (number | null) | User;
   /**
    * Score / grade if applicable
    */
@@ -275,14 +266,14 @@ export interface ActivityLog {
     | 'task_assigned'
     | 'task_completed'
     | 'client_onboarded'
-    | 'worker_added'
-    | 'worker_edited';
+    | 'tutor_added'
+    | 'tutor_edited';
   title: string;
   description?: string | null;
   actor?: (number | null) | User;
   task?: (number | null) | Task;
   client?: (number | null) | Client;
-  worker?: (number | null) | User;
+  tutor?: (number | null) | User;
   metadata?:
     | {
         [k: string]: unknown;
@@ -315,8 +306,8 @@ export interface PayloadLockedDocument {
         value: number | Client;
       } | null)
     | ({
-        relationTo: 'workers';
-        value: number | Worker;
+        relationTo: 'tutors';
+        value: number | Tutor;
       } | null)
     | ({
         relationTo: 'tasks';
@@ -376,7 +367,6 @@ export interface UsersSelect<T extends boolean = true> {
   fullName?: T;
   phone?: T;
   role?: T;
-  workerId?: T;
   profilePicture?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -420,24 +410,22 @@ export interface MediaSelect<T extends boolean = true> {
  */
 export interface ClientsSelect<T extends boolean = true> {
   user?: T;
-  clientId?: T;
   name?: T;
   platform?: T;
   courseName?: T;
   deadline?: T;
   progress?: T;
-  assignedWorker?: T;
+  assignedTutor?: T;
   notes?: T;
   updatedAt?: T;
   createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "workers_select".
+ * via the `definition` "tutors_select".
  */
-export interface WorkersSelect<T extends boolean = true> {
+export interface TutorsSelect<T extends boolean = true> {
   user?: T;
-  workerId?: T;
   tasksAssigned?: T;
   performance?:
     | T
@@ -462,7 +450,7 @@ export interface TasksSelect<T extends boolean = true> {
   taskType?: T;
   dueDate?: T;
   status?: T;
-  worker?: T;
+  tutor?: T;
   score?: T;
   notes?: T;
   updatedAt?: T;
@@ -479,7 +467,7 @@ export interface ActivityLogsSelect<T extends boolean = true> {
   actor?: T;
   task?: T;
   client?: T;
-  worker?: T;
+  tutor?: T;
   metadata?: T;
   updatedAt?: T;
   createdAt?: T;

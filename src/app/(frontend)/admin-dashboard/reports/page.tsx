@@ -30,7 +30,7 @@ import { Label } from '@/components/ui/label'
 
 interface UILogMetadata {
   clientName?: string
-  workerName?: string
+  tutorName?: string
   changes?: string[]
   [key: string]: unknown
 }
@@ -70,10 +70,10 @@ function getActivityIcon(type: string) {
       return <UserPlus className="h-4 w-4 text-green-600" />
     case 'client_deleted':
       return <Trash2 className="h-4 w-4 text-red-600" />
-    case 'worker_added':
-      return <Plus className="h-4 w-4 text-green-600" />
-    case 'worker_edited':
-      return <Edit className="h-4 w-4 text-orange-600" />
+    case 'tutor_added':
+      return '👥 Tutor Added'
+    case 'tutor_edited':
+      return '✏️ Tutor Updated'
     default:
       return <Clock className="h-4 w-4 text-gray-600" />
   }
@@ -87,8 +87,8 @@ function getActivityBadge(type: string) {
     task_overdue: { label: 'Task', color: 'bg-red-100 text-red-800' },
     client_onboarded: { label: 'Client', color: 'bg-green-100 text-green-800' },
     client_deleted: { label: 'Client', color: 'bg-red-100 text-red-800' },
-    worker_added: { label: 'Worker', color: 'bg-green-100 text-green-800' },
-    worker_edited: { label: 'Worker', color: 'bg-orange-100 text-orange-800' },
+    tutor_added: { label: 'Tutor', color: 'bg-green-100 text-green-800' },
+    tutor_edited: { label: 'Tutor', color: 'bg-orange-100 text-orange-800' },
   }
 
   const badge = badges[type as keyof typeof badges] || {
@@ -280,7 +280,7 @@ export default function ReportsPage() {
                 <SelectItem value="task_assigned">Task Assigned</SelectItem>
                 <SelectItem value="task_updated">Task Updated</SelectItem>
                 <SelectItem value="client_onboarded">Client Added</SelectItem>
-                <SelectItem value="worker_added">Tutor Added</SelectItem>
+                <SelectItem value="tutor_added">Tutor Added</SelectItem>
               </SelectContent>
             </Select>
 
@@ -379,18 +379,17 @@ export default function ReportsPage() {
                             )}
                             {log.type === 'task_assigned' && (
                               <div className="flex flex-wrap gap-4">
-                                {log.metadata.workerName && (
-                                  <span>Worker: {log.metadata.workerName}</span>
+                                {log.metadata.tutorName && (
+                                  <span>Tutor: {log.metadata.tutorName}</span>
                                 )}
                                 {log.metadata.clientName && (
                                   <span>Client: {log.metadata.clientName}</span>
                                 )}
                               </div>
                             )}
-                            {log.type === 'worker_edited' &&
-                              Array.isArray(log.metadata.changes) && (
-                                <div>Changes: {log.metadata.changes.join(', ')}</div>
-                              )}
+                            {log.type === 'tutor_edited' && Array.isArray(log.metadata.changes) && (
+                              <div>Changes: {log.metadata.changes.join(', ')}</div>
+                            )}
                           </div>
                         )}
                       </div>

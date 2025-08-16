@@ -32,7 +32,7 @@ const navigationItems = [
   { title: 'Submit Task', url: '/tutors-dashboard/submit-task', icon: Upload },
 ]
 
-export function WorkerSidebar({ user }: { user: AppUser | null }) {
+export function TutorSidebar({ user }: { user: AppUser | null }) {
   const { isMobile, setOpenMobile } = useSidebar()
   const displayName = user?.fullName || user?.email || 'Tutor'
   const avatarURL = (() => {
@@ -104,7 +104,7 @@ export function WorkerSidebar({ user }: { user: AppUser | null }) {
               <div className="flex items-center gap-1">
                 <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-green-500 animate-pulse"></div>
                 <span className="text-[10px] sm:text-xs text-muted-foreground font-medium">
-                  {displayRole(user?.role || 'WORKER')}
+                  {displayRole(user?.role || 'TUTOR')}
                 </span>
               </div>
             </div>

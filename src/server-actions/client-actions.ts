@@ -17,7 +17,7 @@ function normalizeText(v: FormDataEntryValue | null, required = false): string |
   return s || undefined
 }
 
-function normalizeWorker(ref: string | null): string | number | undefined {
+function normalizeTutor(ref: string | null): string | number | undefined {
   if (!ref) return undefined
   // If payload uses numeric IDs, convert when numeric
   if (/^\d+$/.test(ref)) return Number(ref)
@@ -40,7 +40,7 @@ export async function createClient(formData: FormData) {
     | undefined
   const courseName = normalizeText(formData.get('courseName'), true)
   const deadlineRaw = normalizeText(formData.get('deadline'))
-  const assignedWorkerRaw = normalizeText(formData.get('assignedWorker'))
+  const assignedTutorRaw = normalizeText(formData.get('assignedTutor'))
   const notes = normalizeText(formData.get('notes'))
   const userRefRaw = normalizeText(formData.get('user'), true)
 
@@ -51,7 +51,7 @@ export async function createClient(formData: FormData) {
     throw new Error('Invalid platform')
   }
 
-  const assignedWorker = normalizeWorker(assignedWorkerRaw || null)
+  const assignedTutor = normalizeTutor(assignedTutorRaw || null)
   const userRef = normalizeUser(userRefRaw)
   if (typeof userRef !== 'number') throw new Error('Invalid user reference') // enforce numeric for type safety
 
@@ -72,12 +72,14 @@ export async function createClient(formData: FormData) {
         courseName,
         deadline,
         progress: 'Not Started',
-        assignedWorker: typeof assignedWorker === 'number' ? assignedWorker : undefined,
+        assignedTutor: typeof assignedTutor === 'number' ? assignedTutor : undefined,
         notes,
       },
     })
 
     revalidatePath('/admin-dashboard/clients')
+    revalidatePath('/admin-dashboard') // Revalidate parent dashboard
+    revalidatePath('/tutors-dashboard') // Revalidate tutor dashboard if tutors are involved
     return created
   } catch (err) {
     console.error('Failed to create client', err)
@@ -93,7 +95,7 @@ export async function updateClient(
     courseName: string
     deadline: string
     progress: string
-    assignedWorker: number | null
+    assignedTutor: number | null
     notes: string
   }>,
 ) {
@@ -106,16 +108,24 @@ export async function updateClient(
     if (data.courseName !== undefined) sanitized.courseName = data.courseName.trim()
     if (data.deadline !== undefined) sanitized.deadline = data.deadline
     if (data.progress !== undefined) sanitized.progress = data.progress
-    if (data.assignedWorker !== undefined)
-      sanitized.assignedWorker = data.assignedWorker || undefined
+    if (data.assignedTutor !== undefined) sanitized.assignedTutor = data.assignedTutor || undefined
     if (data.notes !== undefined) sanitized.notes = data.notes
-    console.log('Updating client with data:', sanitized, 'for ID:', id)
+    console.log(
+      'Updating client with data:',
+      sanitized,
+      'for ID:',
+      id,
+      'assignedTutor:',
+      data.assignedTutor,
+    )
     const updated = await payload.update({
       collection: CLIENTS_COLLECTION,
-      where: { clientId: { equals: id } },
+      where: { id: { equals: id } },
       data: sanitized,
     })
     revalidatePath('/admin-dashboard/clients')
+    revalidatePath('/admin-dashboard') // Revalidate parent dashboard
+    revalidatePath('/tutors-dashboard') // Revalidate tutor dashboard if tutors are involved
     return updated
   } catch (e) {
     console.error('Failed to update client', e)

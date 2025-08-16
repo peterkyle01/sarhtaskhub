@@ -5,11 +5,11 @@ import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
-import { migrations } from './migrations'
+//import { migrations } from './migrations'
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
 import { Clients } from './collections/Clients'
-import { Workers } from './collections/Workers'
+import { Tutors } from './collections/Tutors'
 import { Tasks } from './collections/Tasks'
 import { ActivityLogs } from './collections/ActivityLogs'
 import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
@@ -24,7 +24,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media, Clients, Workers, Tasks, ActivityLogs],
+  collections: [Users, Media, Clients, Tutors, Tasks, ActivityLogs],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
@@ -34,7 +34,7 @@ export default buildConfig({
     pool: {
       connectionString: process.env.DATABASE_URI || '',
     },
-    prodMigrations: migrations,
+    // prodMigrations: migrations,
   }),
   sharp,
   plugins: [
