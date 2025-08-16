@@ -62,7 +62,7 @@ import {
 interface TaskDoc {
   id: number
   taskId?: string | null
-  client: { id: number; name?: string } | number
+  client: { id: number; name?: string; user?: { id: number; fullName?: string } } | number
   platform: string
   taskType: string
   dueDate: string
@@ -74,7 +74,11 @@ interface TaskDoc {
 
 interface ClientDoc {
   id: number
-  fullName?: string
+  name?: string
+  user?: {
+    id: number
+    fullName?: string
+  }
 }
 interface TutorDoc {
   id: number
@@ -175,7 +179,8 @@ export default function TasksClient({ initialTasks, initialClients, initialTutor
   const itemsPerPage = 8
 
   const filteredTasks = tasks.filter((task) => {
-    const clientName = typeof task.client === 'object' ? task.client.name || '' : ''
+    const clientName =
+      typeof task.client === 'object' ? task.client.name || task.client.user?.fullName || '' : ''
     const tutorName = typeof task.tutor === 'object' && task.tutor ? task.tutor.fullName || '' : ''
     const matchesSearch =
       clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -337,7 +342,7 @@ export default function TasksClient({ initialTasks, initialClients, initialTutor
                         <SelectContent>
                           {initialClients.map((c) => (
                             <SelectItem key={c.id} value={String(c.id)}>
-                              {c.fullName || `Client ${c.id}`}
+                              {c.name || c.user?.fullName || `Client ${c.id}`}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -487,7 +492,7 @@ export default function TasksClient({ initialTasks, initialClients, initialTutor
                   const dueDateStatus = getDueDateStatus(task.dueDate)
                   const clientName =
                     typeof task.client === 'object'
-                      ? task.client.name || `Client ${task.client.id}`
+                      ? task.client.name || task.client.user?.fullName || `Client ${task.client.id}`
                       : `Client ${task.client}`
                   const tutorName =
                     typeof task.tutor === 'object' && task.tutor

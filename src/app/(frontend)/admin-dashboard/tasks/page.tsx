@@ -7,6 +7,10 @@ import TasksClient from './tasks-client'
 interface RelClient {
   id: number
   name?: string
+  user?: {
+    id: number
+    fullName?: string
+  }
 }
 interface RelTutor {
   id: number

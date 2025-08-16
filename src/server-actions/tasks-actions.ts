@@ -144,17 +144,16 @@ export async function listTasks(): Promise<GeneratedTypes['collections']['tasks'
 
 // Fetch clients & tutors to populate selects
 export async function fetchClientsAndTutors(): Promise<{
-  clients: GeneratedTypes['collections']['users'][]
+  clients: GeneratedTypes['collections']['clients'][]
   tutors: GeneratedTypes['collections']['users'][]
 }> {
   try {
     const payload = await getPayload({ config })
     const [clientsRes, tutorsRes] = await Promise.all([
       payload.find({
-        collection: 'users',
-        where: { role: { equals: 'CLIENT' } },
+        collection: 'clients',
         limit: 500,
-        sort: 'fullName',
+        depth: 1, // Include user relationship
       }),
       payload.find({
         collection: 'users',
@@ -164,7 +163,7 @@ export async function fetchClientsAndTutors(): Promise<{
       }),
     ])
     return {
-      clients: clientsRes.docs as GeneratedTypes['collections']['users'][],
+      clients: clientsRes.docs as GeneratedTypes['collections']['clients'][],
       tutors: tutorsRes.docs as GeneratedTypes['collections']['users'][],
     }
   } catch (e) {
