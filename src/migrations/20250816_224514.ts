@@ -2,12 +2,13 @@ import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 
 export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`
-   CREATE TYPE "public"."enum_users_role" AS ENUM('ADMIN', 'WORKER', 'CLIENT');
+   CREATE TYPE "public"."enum_users_role" AS ENUM('ADMIN', 'TUTOR', 'CLIENT');
   CREATE TYPE "public"."enum_clients_platform" AS ENUM('Cengage', 'ALEKS');
   CREATE TYPE "public"."enum_clients_progress" AS ENUM('Not Started', 'In Progress', 'Completed', 'Overdue');
   CREATE TYPE "public"."enum_tasks_platform" AS ENUM('Cengage', 'ALEKS', 'MATLAB');
   CREATE TYPE "public"."enum_tasks_task_type" AS ENUM('Assignment', 'Quiz', 'Course');
   CREATE TYPE "public"."enum_tasks_status" AS ENUM('Pending', 'In Progress', 'Completed');
+  CREATE TYPE "public"."enum_activity_logs_type" AS ENUM('task_created', 'task_updated', 'task_assigned', 'task_completed', 'client_onboarded', 'tutor_added', 'tutor_edited');
   CREATE TABLE "users_sessions" (
   	"_order" integer NOT NULL,
   	"_parent_id" integer NOT NULL,
@@ -20,8 +21,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"id" serial PRIMARY KEY NOT NULL,
   	"full_name" varchar NOT NULL,
   	"phone" varchar NOT NULL,
-  	"role" "enum_users_role" DEFAULT 'WORKER' NOT NULL,
-  	"worker_id" varchar,
+  	"role" "enum_users_role" DEFAULT 'TUTOR' NOT NULL,
   	"profile_picture_id" integer,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
@@ -54,22 +54,20 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE TABLE "clients" (
   	"id" serial PRIMARY KEY NOT NULL,
   	"user_id" integer NOT NULL,
-  	"client_id" varchar,
-  	"name" varchar NOT NULL,
-  	"platform" "enum_clients_platform" NOT NULL,
-  	"course_name" varchar NOT NULL,
-  	"deadline" timestamp(3) with time zone NOT NULL,
-  	"progress" "enum_clients_progress" DEFAULT 'Not Started' NOT NULL,
-  	"assigned_worker_id" integer,
+  	"name" varchar,
+  	"platform" "enum_clients_platform",
+  	"course_name" varchar,
+  	"deadline" timestamp(3) with time zone,
+  	"progress" "enum_clients_progress" DEFAULT 'Not Started',
+  	"assigned_tutor_id" integer,
   	"notes" varchar,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
   
-  CREATE TABLE "workers" (
+  CREATE TABLE "tutors" (
   	"id" serial PRIMARY KEY NOT NULL,
   	"user_id" integer NOT NULL,
-  	"worker_id" varchar,
   	"performance_overall_score" numeric DEFAULT 0,
   	"performance_tasks_completed" numeric DEFAULT 0,
   	"performance_average_completion_time" numeric DEFAULT 0,
@@ -79,7 +77,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
   
-  CREATE TABLE "workers_rels" (
+  CREATE TABLE "tutors_rels" (
   	"id" serial PRIMARY KEY NOT NULL,
   	"order" integer,
   	"parent_id" integer NOT NULL,
@@ -95,9 +93,23 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"task_type" "enum_tasks_task_type" NOT NULL,
   	"due_date" timestamp(3) with time zone NOT NULL,
   	"status" "enum_tasks_status" DEFAULT 'Pending' NOT NULL,
-  	"worker_id" integer,
+  	"tutor_id" integer,
   	"score" numeric,
   	"notes" varchar,
+  	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+  );
+  
+  CREATE TABLE "activity_logs" (
+  	"id" serial PRIMARY KEY NOT NULL,
+  	"type" "enum_activity_logs_type" NOT NULL,
+  	"title" varchar NOT NULL,
+  	"description" varchar,
+  	"actor_id" integer,
+  	"task_id" integer,
+  	"client_id" integer,
+  	"tutor_id" integer,
+  	"metadata" jsonb,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
@@ -117,8 +129,9 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"users_id" integer,
   	"media_id" integer,
   	"clients_id" integer,
-  	"workers_id" integer,
-  	"tasks_id" integer
+  	"tutors_id" integer,
+  	"tasks_id" integer,
+  	"activity_logs_id" integer
   );
   
   CREATE TABLE "payload_preferences" (
@@ -148,23 +161,27 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   ALTER TABLE "users_sessions" ADD CONSTRAINT "users_sessions_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "users" ADD CONSTRAINT "users_profile_picture_id_media_id_fk" FOREIGN KEY ("profile_picture_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "clients" ADD CONSTRAINT "clients_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;
-  ALTER TABLE "clients" ADD CONSTRAINT "clients_assigned_worker_id_users_id_fk" FOREIGN KEY ("assigned_worker_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;
-  ALTER TABLE "workers" ADD CONSTRAINT "workers_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;
-  ALTER TABLE "workers_rels" ADD CONSTRAINT "workers_rels_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."workers"("id") ON DELETE cascade ON UPDATE no action;
-  ALTER TABLE "workers_rels" ADD CONSTRAINT "workers_rels_clients_fk" FOREIGN KEY ("clients_id") REFERENCES "public"."clients"("id") ON DELETE cascade ON UPDATE no action;
+  ALTER TABLE "clients" ADD CONSTRAINT "clients_assigned_tutor_id_users_id_fk" FOREIGN KEY ("assigned_tutor_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "tutors" ADD CONSTRAINT "tutors_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "tutors_rels" ADD CONSTRAINT "tutors_rels_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."tutors"("id") ON DELETE cascade ON UPDATE no action;
+  ALTER TABLE "tutors_rels" ADD CONSTRAINT "tutors_rels_clients_fk" FOREIGN KEY ("clients_id") REFERENCES "public"."clients"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "tasks" ADD CONSTRAINT "tasks_client_id_clients_id_fk" FOREIGN KEY ("client_id") REFERENCES "public"."clients"("id") ON DELETE set null ON UPDATE no action;
-  ALTER TABLE "tasks" ADD CONSTRAINT "tasks_worker_id_users_id_fk" FOREIGN KEY ("worker_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "tasks" ADD CONSTRAINT "tasks_tutor_id_users_id_fk" FOREIGN KEY ("tutor_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "activity_logs" ADD CONSTRAINT "activity_logs_actor_id_users_id_fk" FOREIGN KEY ("actor_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "activity_logs" ADD CONSTRAINT "activity_logs_task_id_tasks_id_fk" FOREIGN KEY ("task_id") REFERENCES "public"."tasks"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "activity_logs" ADD CONSTRAINT "activity_logs_client_id_clients_id_fk" FOREIGN KEY ("client_id") REFERENCES "public"."clients"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "activity_logs" ADD CONSTRAINT "activity_logs_tutor_id_users_id_fk" FOREIGN KEY ("tutor_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."payload_locked_documents"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_users_fk" FOREIGN KEY ("users_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_media_fk" FOREIGN KEY ("media_id") REFERENCES "public"."media"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_clients_fk" FOREIGN KEY ("clients_id") REFERENCES "public"."clients"("id") ON DELETE cascade ON UPDATE no action;
-  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_workers_fk" FOREIGN KEY ("workers_id") REFERENCES "public"."workers"("id") ON DELETE cascade ON UPDATE no action;
+  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_tutors_fk" FOREIGN KEY ("tutors_id") REFERENCES "public"."tutors"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_tasks_fk" FOREIGN KEY ("tasks_id") REFERENCES "public"."tasks"("id") ON DELETE cascade ON UPDATE no action;
+  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_activity_logs_fk" FOREIGN KEY ("activity_logs_id") REFERENCES "public"."activity_logs"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_preferences_rels" ADD CONSTRAINT "payload_preferences_rels_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."payload_preferences"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_preferences_rels" ADD CONSTRAINT "payload_preferences_rels_users_fk" FOREIGN KEY ("users_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
   CREATE INDEX "users_sessions_order_idx" ON "users_sessions" USING btree ("_order");
   CREATE INDEX "users_sessions_parent_id_idx" ON "users_sessions" USING btree ("_parent_id");
-  CREATE UNIQUE INDEX "users_worker_id_idx" ON "users" USING btree ("worker_id");
   CREATE INDEX "users_profile_picture_idx" ON "users" USING btree ("profile_picture_id");
   CREATE INDEX "users_updated_at_idx" ON "users" USING btree ("updated_at");
   CREATE INDEX "users_created_at_idx" ON "users" USING btree ("created_at");
@@ -173,23 +190,27 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "media_created_at_idx" ON "media" USING btree ("created_at");
   CREATE UNIQUE INDEX "media_filename_idx" ON "media" USING btree ("filename");
   CREATE UNIQUE INDEX "clients_user_idx" ON "clients" USING btree ("user_id");
-  CREATE UNIQUE INDEX "clients_client_id_idx" ON "clients" USING btree ("client_id");
-  CREATE INDEX "clients_assigned_worker_idx" ON "clients" USING btree ("assigned_worker_id");
+  CREATE INDEX "clients_assigned_tutor_idx" ON "clients" USING btree ("assigned_tutor_id");
   CREATE INDEX "clients_updated_at_idx" ON "clients" USING btree ("updated_at");
   CREATE INDEX "clients_created_at_idx" ON "clients" USING btree ("created_at");
-  CREATE UNIQUE INDEX "workers_user_idx" ON "workers" USING btree ("user_id");
-  CREATE UNIQUE INDEX "workers_worker_id_idx" ON "workers" USING btree ("worker_id");
-  CREATE INDEX "workers_updated_at_idx" ON "workers" USING btree ("updated_at");
-  CREATE INDEX "workers_created_at_idx" ON "workers" USING btree ("created_at");
-  CREATE INDEX "workers_rels_order_idx" ON "workers_rels" USING btree ("order");
-  CREATE INDEX "workers_rels_parent_idx" ON "workers_rels" USING btree ("parent_id");
-  CREATE INDEX "workers_rels_path_idx" ON "workers_rels" USING btree ("path");
-  CREATE INDEX "workers_rels_clients_id_idx" ON "workers_rels" USING btree ("clients_id");
+  CREATE UNIQUE INDEX "tutors_user_idx" ON "tutors" USING btree ("user_id");
+  CREATE INDEX "tutors_updated_at_idx" ON "tutors" USING btree ("updated_at");
+  CREATE INDEX "tutors_created_at_idx" ON "tutors" USING btree ("created_at");
+  CREATE INDEX "tutors_rels_order_idx" ON "tutors_rels" USING btree ("order");
+  CREATE INDEX "tutors_rels_parent_idx" ON "tutors_rels" USING btree ("parent_id");
+  CREATE INDEX "tutors_rels_path_idx" ON "tutors_rels" USING btree ("path");
+  CREATE INDEX "tutors_rels_clients_id_idx" ON "tutors_rels" USING btree ("clients_id");
   CREATE UNIQUE INDEX "tasks_task_id_idx" ON "tasks" USING btree ("task_id");
   CREATE INDEX "tasks_client_idx" ON "tasks" USING btree ("client_id");
-  CREATE INDEX "tasks_worker_idx" ON "tasks" USING btree ("worker_id");
+  CREATE INDEX "tasks_tutor_idx" ON "tasks" USING btree ("tutor_id");
   CREATE INDEX "tasks_updated_at_idx" ON "tasks" USING btree ("updated_at");
   CREATE INDEX "tasks_created_at_idx" ON "tasks" USING btree ("created_at");
+  CREATE INDEX "activity_logs_actor_idx" ON "activity_logs" USING btree ("actor_id");
+  CREATE INDEX "activity_logs_task_idx" ON "activity_logs" USING btree ("task_id");
+  CREATE INDEX "activity_logs_client_idx" ON "activity_logs" USING btree ("client_id");
+  CREATE INDEX "activity_logs_tutor_idx" ON "activity_logs" USING btree ("tutor_id");
+  CREATE INDEX "activity_logs_updated_at_idx" ON "activity_logs" USING btree ("updated_at");
+  CREATE INDEX "activity_logs_created_at_idx" ON "activity_logs" USING btree ("created_at");
   CREATE INDEX "payload_locked_documents_global_slug_idx" ON "payload_locked_documents" USING btree ("global_slug");
   CREATE INDEX "payload_locked_documents_updated_at_idx" ON "payload_locked_documents" USING btree ("updated_at");
   CREATE INDEX "payload_locked_documents_created_at_idx" ON "payload_locked_documents" USING btree ("created_at");
@@ -199,8 +220,9 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "payload_locked_documents_rels_users_id_idx" ON "payload_locked_documents_rels" USING btree ("users_id");
   CREATE INDEX "payload_locked_documents_rels_media_id_idx" ON "payload_locked_documents_rels" USING btree ("media_id");
   CREATE INDEX "payload_locked_documents_rels_clients_id_idx" ON "payload_locked_documents_rels" USING btree ("clients_id");
-  CREATE INDEX "payload_locked_documents_rels_workers_id_idx" ON "payload_locked_documents_rels" USING btree ("workers_id");
+  CREATE INDEX "payload_locked_documents_rels_tutors_id_idx" ON "payload_locked_documents_rels" USING btree ("tutors_id");
   CREATE INDEX "payload_locked_documents_rels_tasks_id_idx" ON "payload_locked_documents_rels" USING btree ("tasks_id");
+  CREATE INDEX "payload_locked_documents_rels_activity_logs_id_idx" ON "payload_locked_documents_rels" USING btree ("activity_logs_id");
   CREATE INDEX "payload_preferences_key_idx" ON "payload_preferences" USING btree ("key");
   CREATE INDEX "payload_preferences_updated_at_idx" ON "payload_preferences" USING btree ("updated_at");
   CREATE INDEX "payload_preferences_created_at_idx" ON "payload_preferences" USING btree ("created_at");
@@ -218,9 +240,10 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TABLE "users" CASCADE;
   DROP TABLE "media" CASCADE;
   DROP TABLE "clients" CASCADE;
-  DROP TABLE "workers" CASCADE;
-  DROP TABLE "workers_rels" CASCADE;
+  DROP TABLE "tutors" CASCADE;
+  DROP TABLE "tutors_rels" CASCADE;
   DROP TABLE "tasks" CASCADE;
+  DROP TABLE "activity_logs" CASCADE;
   DROP TABLE "payload_locked_documents" CASCADE;
   DROP TABLE "payload_locked_documents_rels" CASCADE;
   DROP TABLE "payload_preferences" CASCADE;
@@ -231,5 +254,6 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TYPE "public"."enum_clients_progress";
   DROP TYPE "public"."enum_tasks_platform";
   DROP TYPE "public"."enum_tasks_task_type";
-  DROP TYPE "public"."enum_tasks_status";`)
+  DROP TYPE "public"."enum_tasks_status";
+  DROP TYPE "public"."enum_activity_logs_type";`)
 }

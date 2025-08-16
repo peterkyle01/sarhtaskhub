@@ -14,12 +14,22 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Users, UserCheck, User, ChevronDown, ChevronUp, Eye } from 'lucide-react'
-import { updateUserDetailsAction } from '@/server-actions/user-actions'
+import { updateUserDetailsAction, deleteUserAction } from '@/server-actions/user-actions'
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog'
 import { getRoleBadgeColor } from '@/lib/user-utils'
 import { Input } from '@/components/ui/input'
 
 interface UserProfile {
-  id: string
+  id: number
   email: string
   name: string
   role: string
@@ -33,17 +43,21 @@ interface UserAccordionProps {
 }
 
 export function UserAccordion({ users }: UserAccordionProps) {
-  const [expandedUserId, setExpandedUserId] = useState<string | null>(null)
+  const [expandedUserId, setExpandedUserId] = useState<number | null>(null)
   // Removed editUserId & pwdUserId states; consolidated into inline basic edit
-  const [basicEditUserId, setBasicEditUserId] = useState<string | null>(null)
+  const [basicEditUserId, setBasicEditUserId] = useState<number | null>(null)
   const [basicEditValues, setBasicEditValues] = useState<{
     fullName: string
     phone: string
     role: string
     password: string
   }>({ fullName: '', phone: '', role: 'ADMIN', password: '' })
+  const [deleteDialogState, setDeleteDialogState] = useState<{
+    open: boolean
+    userId: number | null
+  }>({ open: false, userId: null })
 
-  const toggleUserExpansion = (userId: string) => {
+  const toggleUserExpansion = (userId: number) => {
     setExpandedUserId(expandedUserId === userId ? null : userId)
   }
 
@@ -81,7 +95,7 @@ export function UserAccordion({ users }: UserAccordionProps) {
                 <div className="w-8 h-8 bg-blue-100 dark:bg-blue-400/20 rounded-full flex items-center justify-center">
                   {userProfile.role === 'admin' ? (
                     <UserCheck className="w-4 h-4 text-blue-600 dark:text-blue-300" />
-                  ) : userProfile.role === 'worker' ? (
+                  ) : userProfile.role === 'tutor' ? (
                     <Users className="w-4 h-4 text-blue-600 dark:text-blue-300" />
                   ) : (
                     <User className="w-4 h-4 text-blue-600 dark:text-blue-300" />
@@ -237,7 +251,7 @@ export function UserAccordion({ users }: UserAccordionProps) {
                                   className="mt-1 h-8 text-sm rounded-md border bg-background px-2 focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                                 >
                                   <option value="ADMIN">Admin</option>
-                                  <option value="WORKER">Worker</option>
+                                  <option value="TUTOR">Tutor</option>
                                   <option value="CLIENT">Client</option>
                                 </select>
                               </div>
@@ -360,7 +374,7 @@ export function UserAccordion({ users }: UserAccordionProps) {
                             <p className="text-sm text-foreground/80">
                               {userProfile.role === 'admin'
                                 ? 'Full system access'
-                                : userProfile.role === 'worker'
+                                : userProfile.role === 'tutor'
                                   ? 'Task management access'
                                   : 'Client dashboard access'}
                             </p>
@@ -377,7 +391,63 @@ export function UserAccordion({ users }: UserAccordionProps) {
                       </Card>
                     </div>
 
-                    {/* Removed bottom action buttons & panels now redundant */}
+                    <div className="flex justify-end gap-2">
+                      <AlertDialog
+                        open={deleteDialogState.open && deleteDialogState.userId === userProfile.id}
+                        onOpenChange={(open) => {
+                          setDeleteDialogState({
+                            open,
+                            userId: open ? userProfile.id : null,
+                          })
+                        }}
+                      >
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setDeleteDialogState({
+                                open: true,
+                                userId: userProfile.id,
+                              })
+                            }}
+                          >
+                            Delete User
+                          </Button>
+                        </AlertDialogTrigger>
+
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete user?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. Deleting this user will also remove any
+                              linked tutor or client profiles. Are you sure you want to continue?
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <form
+                              action={deleteUserAction}
+                              className="inline"
+                              onSubmit={() => {
+                                console.log('Deleting user with ID:', userProfile.id)
+                                setDeleteDialogState({ open: false, userId: null })
+                              }}
+                            >
+                              <input
+                                type="hidden"
+                                name="userId"
+                                value={userProfile.id.toString()}
+                              />
+                              <Button type="submit" variant="destructive" className="ml-2">
+                                Delete
+                              </Button>
+                            </form>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                 </TableCell>
               </TableRow>

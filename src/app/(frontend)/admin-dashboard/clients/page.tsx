@@ -2,7 +2,7 @@ import ClientsClient from './clients-client'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import type { Payload } from 'payload'
-import type { ClientItem, WorkerUser } from './clients-client'
+import type { ClientItem, TutorUser } from './clients-client'
 
 interface GenericDoc {
   id: string | number
@@ -27,10 +27,10 @@ export default async function ClientsPage() {
   // Existing client profile documents
   const clientsRes = await payload.find({ collection: 'clients', limit: 500, sort: '-createdAt' })
 
-  // Workers (for assignment select)
-  const workersRes = await payload.find({
+  // Tutors (for assignment select)
+  const tutorsRes = await payload.find({
     collection: 'users',
-    where: { role: { equals: 'WORKER' } },
+    where: { role: { equals: 'TUTOR' } },
     limit: 300,
   })
 
@@ -74,13 +74,12 @@ export default async function ClientsPage() {
     }
     return {
       id: String(c.id),
-      clientId: c['clientId'] as string | undefined,
       name: (c['name'] as string) || relatedUserFullName || '',
       platform: (c['platform'] as string) || '',
       courseName: (c['courseName'] as string) || '',
       deadline: c['deadline'] as string | undefined,
       progress: (c['progress'] as string) || 'Not Started',
-      assignedWorker: c['assignedWorker'] as string | number | WorkerUser | undefined,
+      assignedTutor: c['assignedTutor'] as string | number | TutorUser | undefined,
       notes: c['notes'] as string | undefined,
     }
   })
@@ -90,22 +89,21 @@ export default async function ClientsPage() {
     .filter((u) => !clientProfileByUserId.has(u.id))
     .map((u) => ({
       id: `synthetic-${u.id}`,
-      clientId: undefined,
       name: u.fullName || u.email || `Client ${u.id}`,
       platform: '',
       courseName: '',
       deadline: undefined,
       progress: 'Not Started',
-      assignedWorker: undefined,
+      assignedTutor: undefined,
       notes: undefined,
     }))
 
   // Merge (existing profiles first, then synthetic)
   const combinedClients = [...existingClientItems, ...syntheticClients]
 
-  const normWorkers: WorkerUser[] = (workersRes.docs as unknown as GenericDoc[]).map((w) => ({
-    ...w,
-    id: String(w.id),
+  const normTutors: TutorUser[] = (tutorsRes.docs as unknown as GenericDoc[]).map((t) => ({
+    ...t,
+    id: String(t.id),
   }))
   const normClientUsers = (clientUsersRes.docs as unknown as GenericDoc[]).map((u) => ({
     ...u,
@@ -115,7 +113,7 @@ export default async function ClientsPage() {
   return (
     <ClientsClient
       initialClients={combinedClients}
-      workers={normWorkers}
+      tutors={normTutors}
       clientUsers={normClientUsers}
     />
   )

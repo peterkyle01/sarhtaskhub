@@ -12,7 +12,7 @@ export interface ActivityLog {
   actor?: Record<string, unknown> | number | null
   task?: Record<string, unknown> | number | null
   client?: Record<string, unknown> | number | null
-  worker?: Record<string, unknown> | number | null
+  tutor?: Record<string, unknown> | number | null
   metadata?: Record<string, unknown> | null
 }
 

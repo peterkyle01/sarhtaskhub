@@ -31,7 +31,7 @@ export function UserManagementClient() {
     password: '',
     fullName: '',
     phone: '',
-    role: 'WORKER' as 'ADMIN' | 'WORKER' | 'CLIENT',
+    role: 'TUTOR' as 'ADMIN' | 'TUTOR' | 'CLIENT',
   })
   const [error, setError] = useState('')
   const router = useRouter()
@@ -61,7 +61,7 @@ export function UserManagementClient() {
         password: '',
         fullName: '',
         phone: '',
-        role: 'WORKER',
+        role: 'TUTOR',
       })
       setDialogOpen(false)
 
@@ -150,7 +150,7 @@ export function UserManagementClient() {
             <Label htmlFor="role">Role</Label>
             <Select
               value={formData.role}
-              onValueChange={(value: 'ADMIN' | 'WORKER' | 'CLIENT') =>
+              onValueChange={(value: 'ADMIN' | 'TUTOR' | 'CLIENT') =>
                 setFormData((prev) => ({ ...prev, role: value }))
               }
             >
@@ -158,7 +158,7 @@ export function UserManagementClient() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="WORKER">Tutor</SelectItem>
+                <SelectItem value="TUTOR">Tutor</SelectItem>
                 <SelectItem value="CLIENT">Client</SelectItem>
                 <SelectItem value="ADMIN">Admin</SelectItem>
               </SelectContent>

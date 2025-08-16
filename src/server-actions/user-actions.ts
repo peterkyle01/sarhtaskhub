@@ -16,7 +16,7 @@ export interface CreateUserData {
   email: string
   password: string
   fullName: string
-  role: 'ADMIN' | 'WORKER' | 'CLIENT'
+  role: 'ADMIN' | 'TUTOR' | 'CLIENT'
   phone: string
 }
 
@@ -137,7 +137,7 @@ export async function createUser(userData: CreateUserData): Promise<CreateUserRe
 
 export async function updateUserRole(
   userId: number,
-  role: 'ADMIN' | 'WORKER' | 'CLIENT',
+  role: 'ADMIN' | 'TUTOR' | 'CLIENT',
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const payload = await getPayload({ config: payloadConfig })
@@ -236,7 +236,7 @@ export async function resetPasswordAction(formData: FormData): Promise<void> {
 
 export async function updateUserDetails(
   userId: number,
-  data: { fullName?: string; phone?: string; role?: 'ADMIN' | 'WORKER' | 'CLIENT' },
+  data: { fullName?: string; phone?: string; role?: 'ADMIN' | 'TUTOR' | 'CLIENT' },
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const payload = await getPayload({ config: payloadConfig })
@@ -284,7 +284,7 @@ export async function updateUserDetailsAction(formData: FormData): Promise<void>
   const fullName = (formData.get('fullName') as string | null) || undefined
   const phone = (formData.get('phone') as string | null) || undefined
   const roleRaw = (formData.get('role') as string | null) || undefined
-  const role = roleRaw as 'ADMIN' | 'WORKER' | 'CLIENT' | undefined
+  const role = roleRaw as 'ADMIN' | 'TUTOR' | 'CLIENT' | undefined
   await updateUserDetails(userId, { fullName, phone, role })
 }
 
@@ -295,4 +295,54 @@ export async function setUserPasswordAction(formData: FormData): Promise<void> {
   const userId = parseInt(idRaw, 10)
   if (Number.isNaN(userId)) return
   await setUserPassword(userId, password)
+}
+
+export async function deleteUser(userId: number): Promise<{ success: boolean; error?: string }> {
+  try {
+    const payload = await getPayload({ config: payloadConfig })
+
+    // Remove related tutor or client profiles first to avoid orphaned records
+    try {
+      const tutor = await payload.find({
+        collection: 'tutors',
+        where: { user: { equals: userId } },
+        limit: 1,
+      })
+      if (tutor?.docs?.length) {
+        await payload.delete({ collection: 'tutors', id: tutor.docs[0].id, overrideAccess: true })
+      }
+    } catch (e) {
+      // ignore tutor deletion failure, continue
+      console.error('Failed to delete linked tutor profile:', e)
+    }
+
+    try {
+      const client = await payload.find({
+        collection: 'clients',
+        where: { user: { equals: userId } },
+        limit: 1,
+      })
+      if (client?.docs?.length) {
+        await payload.delete({ collection: 'clients', id: client.docs[0].id, overrideAccess: true })
+      }
+    } catch (e) {
+      console.error('Failed to delete linked client profile:', e)
+    }
+
+    await payload.delete({ collection: 'users', id: userId, overrideAccess: true })
+
+    revalidatePath('/admin-dashboard/users')
+    return { success: true }
+  } catch (e: unknown) {
+    console.error('Failed to delete user:', e)
+    return { success: false, error: e instanceof Error ? e.message : 'Failed to delete user' }
+  }
+}
+
+export async function deleteUserAction(formData: FormData): Promise<void> {
+  const idRaw = formData.get('userId') as string | null
+  if (!idRaw) return
+  const userId = parseInt(idRaw, 10)
+  if (Number.isNaN(userId)) return
+  await deleteUser(userId)
 }

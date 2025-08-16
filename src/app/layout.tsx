@@ -9,7 +9,7 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Sarh Task Hub',
   description:
-    'Comprehensive task management system designed to streamline operations for both workers and administrators. It features user authentication, role-based access control, and a user-friendly interface for efficient task management.',
+    'Comprehensive task management system designed to streamline operations for both tutors and administrators. It features user authentication, role-based access control, and a user-friendly interface for efficient task management.',
   generator: 'v0.dev',
 }
 

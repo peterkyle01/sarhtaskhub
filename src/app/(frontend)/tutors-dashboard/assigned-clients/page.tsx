@@ -38,11 +38,11 @@ interface _ClientTask {
 // Data now fetched from server actions
 
 import {
-  listAssignedClientsForCurrentWorker,
-  listClientTasksForWorker,
+  listAssignedClientsForCurrentTutor,
+  listClientTasksForTutor,
   type AssignedClientSummary,
   type ClientTaskItem,
-} from '@/server-actions/worker-actions'
+} from '@/server-actions/tutors-actions'
 
 function getPlatformBadge(platform: string) {
   const colors: Record<string, string> = {
@@ -129,7 +129,7 @@ export default function AssignedClientsPage() {
     let active = true
     async function load() {
       try {
-        const data = await listAssignedClientsForCurrentWorker()
+        const data = await listAssignedClientsForCurrentTutor()
         if (active) setClients(data)
       } catch (e) {
         console.error('Failed to load assigned clients', e)
@@ -160,7 +160,7 @@ export default function AssignedClientsPage() {
     setIsTaskModalOpen(true)
     setTasksLoading(true)
     try {
-      const tasks = await listClientTasksForWorker(client.id)
+      const tasks = await listClientTasksForTutor(client.id)
       setClientTasks(tasks)
     } catch (e) {
       console.error('Failed to load client tasks', e)

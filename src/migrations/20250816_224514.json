@@ -1,5 +1,5 @@
 {
-  "id": "fe6d5543-1bec-4aef-853c-1a4bf9a30a9b",
+  "id": "42508076-14f7-41a5-9010-e8e5eb63bb6a",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -120,13 +120,7 @@
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "default": "'WORKER'"
-        },
-        "worker_id": {
-          "name": "worker_id",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": false
+          "default": "'TUTOR'"
         },
         "profile_picture_id": {
           "name": "profile_picture_id",
@@ -193,21 +187,6 @@
         }
       },
       "indexes": {
-        "users_worker_id_idx": {
-          "name": "users_worker_id_idx",
-          "columns": [
-            {
-              "expression": "worker_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "users_profile_picture_idx": {
           "name": "users_profile_picture_idx",
           "columns": [
@@ -452,47 +431,41 @@
           "primaryKey": false,
           "notNull": true
         },
-        "client_id": {
-          "name": "client_id",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": false
-        },
         "name": {
           "name": "name",
           "type": "varchar",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "platform": {
           "name": "platform",
           "type": "enum_clients_platform",
           "typeSchema": "public",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "course_name": {
           "name": "course_name",
           "type": "varchar",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "deadline": {
           "name": "deadline",
           "type": "timestamp(3) with time zone",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "progress": {
           "name": "progress",
           "type": "enum_clients_progress",
           "typeSchema": "public",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "default": "'Not Started'"
         },
-        "assigned_worker_id": {
-          "name": "assigned_worker_id",
+        "assigned_tutor_id": {
+          "name": "assigned_tutor_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -534,26 +507,11 @@
           "method": "btree",
           "with": {}
         },
-        "clients_client_id_idx": {
-          "name": "clients_client_id_idx",
+        "clients_assigned_tutor_idx": {
+          "name": "clients_assigned_tutor_idx",
           "columns": [
             {
-              "expression": "client_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "clients_assigned_worker_idx": {
-          "name": "clients_assigned_worker_idx",
-          "columns": [
-            {
-              "expression": "assigned_worker_id",
+              "expression": "assigned_tutor_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -609,12 +567,12 @@
           "onDelete": "set null",
           "onUpdate": "no action"
         },
-        "clients_assigned_worker_id_users_id_fk": {
-          "name": "clients_assigned_worker_id_users_id_fk",
+        "clients_assigned_tutor_id_users_id_fk": {
+          "name": "clients_assigned_tutor_id_users_id_fk",
           "tableFrom": "clients",
           "tableTo": "users",
           "columnsFrom": [
-            "assigned_worker_id"
+            "assigned_tutor_id"
           ],
           "columnsTo": [
             "id"
@@ -629,8 +587,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.workers": {
-      "name": "workers",
+    "public.tutors": {
+      "name": "tutors",
       "schema": "",
       "columns": {
         "id": {
@@ -644,12 +602,6 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": true
-        },
-        "worker_id": {
-          "name": "worker_id",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": false
         },
         "performance_overall_score": {
           "name": "performance_overall_score",
@@ -700,8 +652,8 @@
         }
       },
       "indexes": {
-        "workers_user_idx": {
-          "name": "workers_user_idx",
+        "tutors_user_idx": {
+          "name": "tutors_user_idx",
           "columns": [
             {
               "expression": "user_id",
@@ -715,23 +667,8 @@
           "method": "btree",
           "with": {}
         },
-        "workers_worker_id_idx": {
-          "name": "workers_worker_id_idx",
-          "columns": [
-            {
-              "expression": "worker_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "workers_updated_at_idx": {
-          "name": "workers_updated_at_idx",
+        "tutors_updated_at_idx": {
+          "name": "tutors_updated_at_idx",
           "columns": [
             {
               "expression": "updated_at",
@@ -745,8 +682,8 @@
           "method": "btree",
           "with": {}
         },
-        "workers_created_at_idx": {
-          "name": "workers_created_at_idx",
+        "tutors_created_at_idx": {
+          "name": "tutors_created_at_idx",
           "columns": [
             {
               "expression": "created_at",
@@ -762,9 +699,9 @@
         }
       },
       "foreignKeys": {
-        "workers_user_id_users_id_fk": {
-          "name": "workers_user_id_users_id_fk",
-          "tableFrom": "workers",
+        "tutors_user_id_users_id_fk": {
+          "name": "tutors_user_id_users_id_fk",
+          "tableFrom": "tutors",
           "tableTo": "users",
           "columnsFrom": [
             "user_id"
@@ -782,8 +719,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.workers_rels": {
-      "name": "workers_rels",
+    "public.tutors_rels": {
+      "name": "tutors_rels",
       "schema": "",
       "columns": {
         "id": {
@@ -818,8 +755,8 @@
         }
       },
       "indexes": {
-        "workers_rels_order_idx": {
-          "name": "workers_rels_order_idx",
+        "tutors_rels_order_idx": {
+          "name": "tutors_rels_order_idx",
           "columns": [
             {
               "expression": "order",
@@ -833,8 +770,8 @@
           "method": "btree",
           "with": {}
         },
-        "workers_rels_parent_idx": {
-          "name": "workers_rels_parent_idx",
+        "tutors_rels_parent_idx": {
+          "name": "tutors_rels_parent_idx",
           "columns": [
             {
               "expression": "parent_id",
@@ -848,8 +785,8 @@
           "method": "btree",
           "with": {}
         },
-        "workers_rels_path_idx": {
-          "name": "workers_rels_path_idx",
+        "tutors_rels_path_idx": {
+          "name": "tutors_rels_path_idx",
           "columns": [
             {
               "expression": "path",
@@ -863,8 +800,8 @@
           "method": "btree",
           "with": {}
         },
-        "workers_rels_clients_id_idx": {
-          "name": "workers_rels_clients_id_idx",
+        "tutors_rels_clients_id_idx": {
+          "name": "tutors_rels_clients_id_idx",
           "columns": [
             {
               "expression": "clients_id",
@@ -880,10 +817,10 @@
         }
       },
       "foreignKeys": {
-        "workers_rels_parent_fk": {
-          "name": "workers_rels_parent_fk",
-          "tableFrom": "workers_rels",
-          "tableTo": "workers",
+        "tutors_rels_parent_fk": {
+          "name": "tutors_rels_parent_fk",
+          "tableFrom": "tutors_rels",
+          "tableTo": "tutors",
           "columnsFrom": [
             "parent_id"
           ],
@@ -893,9 +830,9 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "workers_rels_clients_fk": {
-          "name": "workers_rels_clients_fk",
-          "tableFrom": "workers_rels",
+        "tutors_rels_clients_fk": {
+          "name": "tutors_rels_clients_fk",
+          "tableFrom": "tutors_rels",
           "tableTo": "clients",
           "columnsFrom": [
             "clients_id"
@@ -963,8 +900,8 @@
           "notNull": true,
           "default": "'Pending'"
         },
-        "worker_id": {
-          "name": "worker_id",
+        "tutor_id": {
+          "name": "tutor_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -1027,11 +964,11 @@
           "method": "btree",
           "with": {}
         },
-        "tasks_worker_idx": {
-          "name": "tasks_worker_idx",
+        "tasks_tutor_idx": {
+          "name": "tasks_tutor_idx",
           "columns": [
             {
-              "expression": "worker_id",
+              "expression": "tutor_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1087,12 +1024,238 @@
           "onDelete": "set null",
           "onUpdate": "no action"
         },
-        "tasks_worker_id_users_id_fk": {
-          "name": "tasks_worker_id_users_id_fk",
+        "tasks_tutor_id_users_id_fk": {
+          "name": "tasks_tutor_id_users_id_fk",
           "tableFrom": "tasks",
           "tableTo": "users",
           "columnsFrom": [
-            "worker_id"
+            "tutor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.activity_logs": {
+      "name": "activity_logs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "enum_activity_logs_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actor_id": {
+          "name": "actor_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "task_id": {
+          "name": "task_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "client_id": {
+          "name": "client_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tutor_id": {
+          "name": "tutor_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "activity_logs_actor_idx": {
+          "name": "activity_logs_actor_idx",
+          "columns": [
+            {
+              "expression": "actor_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "activity_logs_task_idx": {
+          "name": "activity_logs_task_idx",
+          "columns": [
+            {
+              "expression": "task_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "activity_logs_client_idx": {
+          "name": "activity_logs_client_idx",
+          "columns": [
+            {
+              "expression": "client_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "activity_logs_tutor_idx": {
+          "name": "activity_logs_tutor_idx",
+          "columns": [
+            {
+              "expression": "tutor_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "activity_logs_updated_at_idx": {
+          "name": "activity_logs_updated_at_idx",
+          "columns": [
+            {
+              "expression": "updated_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "activity_logs_created_at_idx": {
+          "name": "activity_logs_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "activity_logs_actor_id_users_id_fk": {
+          "name": "activity_logs_actor_id_users_id_fk",
+          "tableFrom": "activity_logs",
+          "tableTo": "users",
+          "columnsFrom": [
+            "actor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "activity_logs_task_id_tasks_id_fk": {
+          "name": "activity_logs_task_id_tasks_id_fk",
+          "tableFrom": "activity_logs",
+          "tableTo": "tasks",
+          "columnsFrom": [
+            "task_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "activity_logs_client_id_clients_id_fk": {
+          "name": "activity_logs_client_id_clients_id_fk",
+          "tableFrom": "activity_logs",
+          "tableTo": "clients",
+          "columnsFrom": [
+            "client_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "activity_logs_tutor_id_users_id_fk": {
+          "name": "activity_logs_tutor_id_users_id_fk",
+          "tableFrom": "activity_logs",
+          "tableTo": "users",
+          "columnsFrom": [
+            "tutor_id"
           ],
           "columnsTo": [
             "id"
@@ -1238,14 +1401,20 @@
           "primaryKey": false,
           "notNull": false
         },
-        "workers_id": {
-          "name": "workers_id",
+        "tutors_id": {
+          "name": "tutors_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
         "tasks_id": {
           "name": "tasks_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "activity_logs_id": {
+          "name": "activity_logs_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -1342,11 +1511,11 @@
           "method": "btree",
           "with": {}
         },
-        "payload_locked_documents_rels_workers_id_idx": {
-          "name": "payload_locked_documents_rels_workers_id_idx",
+        "payload_locked_documents_rels_tutors_id_idx": {
+          "name": "payload_locked_documents_rels_tutors_id_idx",
           "columns": [
             {
-              "expression": "workers_id",
+              "expression": "tutors_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1362,6 +1531,21 @@
           "columns": [
             {
               "expression": "tasks_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "payload_locked_documents_rels_activity_logs_id_idx": {
+          "name": "payload_locked_documents_rels_activity_logs_id_idx",
+          "columns": [
+            {
+              "expression": "activity_logs_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1426,12 +1610,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "payload_locked_documents_rels_workers_fk": {
-          "name": "payload_locked_documents_rels_workers_fk",
+        "payload_locked_documents_rels_tutors_fk": {
+          "name": "payload_locked_documents_rels_tutors_fk",
           "tableFrom": "payload_locked_documents_rels",
-          "tableTo": "workers",
+          "tableTo": "tutors",
           "columnsFrom": [
-            "workers_id"
+            "tutors_id"
           ],
           "columnsTo": [
             "id"
@@ -1445,6 +1629,19 @@
           "tableTo": "tasks",
           "columnsFrom": [
             "tasks_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "payload_locked_documents_rels_activity_logs_fk": {
+          "name": "payload_locked_documents_rels_activity_logs_fk",
+          "tableFrom": "payload_locked_documents_rels",
+          "tableTo": "activity_logs",
+          "columnsFrom": [
+            "activity_logs_id"
           ],
           "columnsTo": [
             "id"
@@ -1764,7 +1961,7 @@
       "schema": "public",
       "values": [
         "ADMIN",
-        "WORKER",
+        "TUTOR",
         "CLIENT"
       ]
     },
@@ -1811,6 +2008,19 @@
         "Pending",
         "In Progress",
         "Completed"
+      ]
+    },
+    "public.enum_activity_logs_type": {
+      "name": "enum_activity_logs_type",
+      "schema": "public",
+      "values": [
+        "task_created",
+        "task_updated",
+        "task_assigned",
+        "task_completed",
+        "client_onboarded",
+        "tutor_added",
+        "tutor_edited"
       ]
     }
   },

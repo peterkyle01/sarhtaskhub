@@ -36,25 +36,25 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useRouter } from 'next/navigation'
 
-export interface WorkerUser {
+export interface TutorUser {
   id: string | number
   fullName?: string
   email?: string
 }
+
 export interface ClientItem {
   id: string | number
-  clientId?: string
   name: string
   platform: string
   courseName: string
   deadline?: string
   progress: string
-  assignedWorker?: WorkerUser | string | number | null
+  assignedTutor?: TutorUser | string | number | null
   notes?: string
 }
 interface Props {
   initialClients: ClientItem[]
-  workers: WorkerUser[]
+  tutors: TutorUser[]
   clientUsers?: { id: string | number; fullName?: string; email?: string }[]
 }
 
@@ -92,7 +92,7 @@ function getDeadlineStatus(deadline: string) {
   return 'normal'
 }
 
-export default function ClientsClient({ initialClients, workers, clientUsers = [] }: Props) {
+export default function ClientsClient({ initialClients, tutors, clientUsers = [] }: Props) {
   const [searchTerm, setSearchTerm] = useState('')
   const [platformFilter, setPlatformFilter] = useState('all')
   const [deadlineFilter, setDeadlineFilter] = useState('all')
@@ -109,7 +109,7 @@ export default function ClientsClient({ initialClients, workers, clientUsers = [
   const filteredClients = optimisticClients.filter((client) => {
     const name = client.name || ''
     const courseName = client.courseName || ''
-    const clientId = client.clientId || client.id || ''
+    const clientId = client.id || ''
     const platform = client.platform || ''
     const matchesSearch =
       name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -135,13 +135,13 @@ export default function ClientsClient({ initialClients, workers, clientUsers = [
     const tempId = 'temp-' + Date.now()
     const optimistic: ClientItem = {
       id: tempId,
-      clientId: 'NEW',
+      // removed clientId
       name: '', // will resolve to user fullName after refresh
       platform: formData.get('platform') as string,
       courseName: formData.get('courseName') as string,
       deadline: (formData.get('deadline') as string) || undefined,
       progress: 'Not Started',
-      assignedWorker: (formData.get('assignedWorker') as string) || undefined,
+      assignedTutor: (formData.get('assignedTutor') as string) || undefined,
       notes: (formData.get('notes') as string) || undefined,
     }
     setOptimisticClients((prev) => [optimistic, ...prev])
@@ -149,10 +149,15 @@ export default function ClientsClient({ initialClients, workers, clientUsers = [
     startTransition(async () => {
       try {
         await createClient(formData)
+        // Force refresh to get updated data from server
         router.refresh()
+        // Small delay to ensure server revalidation is complete
+        setTimeout(() => router.refresh(), 100)
       } catch (_e) {
         // rollback on error
         setOptimisticClients((prev) => prev.filter((c) => c.id !== tempId))
+        // Show error message to user
+        console.error('Failed to create client:', _e)
       }
     })
   }
@@ -163,28 +168,48 @@ export default function ClientsClient({ initialClients, workers, clientUsers = [
       ...editingClient,
       ...data,
       id: editingClient.id,
-      clientId: editingClient.clientId,
+      // removed clientId
     }
+    console.log('handleEditSave - received data:', data)
+    console.log(
+      'handleEditSave - updatedClient.assignedTutor:',
+      updatedClient.assignedTutor,
+      typeof updatedClient.assignedTutor,
+    )
+
+    const finalAssignedTutor =
+      typeof updatedClient.assignedTutor === 'object' && updatedClient.assignedTutor
+        ? Number(updatedClient.assignedTutor.id)
+        : typeof updatedClient.assignedTutor === 'number'
+          ? updatedClient.assignedTutor
+          : typeof updatedClient.assignedTutor === 'string' && updatedClient.assignedTutor
+            ? Number(updatedClient.assignedTutor)
+            : null
+
+    console.log('handleEditSave - final assignedTutor:', finalAssignedTutor)
+
     setOptimisticClients((prev) =>
       prev.map((client) => (client.id === updatedClient.id ? updatedClient : client)),
     )
     startTransition(async () => {
       try {
-        await updateClient(Number(updatedClient.id), {
+        await updateClient(updatedClient.id, {
           platform: updatedClient.platform as 'Cengage' | 'ALEKS' | undefined,
           courseName: updatedClient.courseName,
           deadline: updatedClient.deadline,
-          assignedWorker:
-            typeof updatedClient.assignedWorker === 'object' && updatedClient.assignedWorker
-              ? Number(updatedClient.assignedWorker.id)
-              : undefined,
+          assignedTutor: finalAssignedTutor,
           notes: updatedClient.notes,
         })
+        // Force refresh to get updated data from server
         router.refresh()
+        // Small delay to ensure server revalidation is complete
+        setTimeout(() => router.refresh(), 100)
       } catch (_e) {
         setOptimisticClients((prev) =>
           prev.map((client) => (client.id === updatedClient.id ? editingClient : client)),
         )
+        // Show error message to user
+        console.error('Failed to update client:', _e)
       }
     })
   }
@@ -249,27 +274,27 @@ export default function ClientsClient({ initialClients, workers, clientUsers = [
                     <Input id="deadline" name="deadline" type="date" />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="assignedWorker">Assigned Worker</Label>
+                    <Label htmlFor="assignedTutor">Assigned Tutor</Label>
                     <Select
                       onValueChange={(v) => {
                         const hidden = document.querySelector<HTMLInputElement>(
-                          'input[name="assignedWorker"]',
+                          'input[name="assignedTutor"]',
                         )
                         if (hidden) hidden.value = v
                       }}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select worker" />
+                        <SelectValue placeholder="Select tutor" />
                       </SelectTrigger>
                       <SelectContent>
-                        {workers.map((w) => (
-                          <SelectItem key={String(w.id)} value={String(w.id)}>
-                            {w.fullName || w.email}
+                        {tutors.map((t) => (
+                          <SelectItem key={String(t.id)} value={String(t.id)}>
+                            {t.fullName || t.email}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <input type="hidden" name="assignedWorker" />
+                    <input type="hidden" name="assignedTutor" />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="user">Client User</Label>
@@ -350,7 +375,7 @@ export default function ClientsClient({ initialClients, workers, clientUsers = [
                   <TableHead>Course Name</TableHead>
                   <TableHead>Deadline</TableHead>
                   <TableHead>Progress Status</TableHead>
-                  <TableHead>Assigned Worker</TableHead>
+                  <TableHead>Assigned Tutor</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -360,9 +385,7 @@ export default function ClientsClient({ initialClients, workers, clientUsers = [
                     key={String(client.id)}
                     className={String(client.id).startsWith('temp-') ? 'opacity-60' : ''}
                   >
-                    <TableCell className="font-medium">
-                      {client.clientId || String(client.id)}
-                    </TableCell>
+                    <TableCell className="font-medium">{String(client.id)}</TableCell>
                     <TableCell>{client.name}</TableCell>
                     <TableCell>{getPlatformBadge(client.platform)}</TableCell>
                     <TableCell>{client.courseName}</TableCell>
@@ -397,10 +420,10 @@ export default function ClientsClient({ initialClients, workers, clientUsers = [
                     </TableCell>
                     <TableCell>{getProgressBadge(client.progress)}</TableCell>
                     <TableCell>
-                      {typeof client.assignedWorker === 'object' &&
-                      client.assignedWorker !== null &&
-                      !Array.isArray(client.assignedWorker)
-                        ? client.assignedWorker.fullName || client.assignedWorker.email
+                      {typeof client.assignedTutor === 'object' &&
+                      client.assignedTutor !== null &&
+                      !Array.isArray(client.assignedTutor)
+                        ? client.assignedTutor.fullName || client.assignedTutor.email
                         : '-'}
                     </TableCell>
                     <TableCell className="text-right">
@@ -473,7 +496,7 @@ export default function ClientsClient({ initialClients, workers, clientUsers = [
         open={isEditOpen}
         onOpenChange={setIsEditOpen}
         client={editingClient}
-        workers={workers}
+        tutors={tutors}
         onSave={handleEditSave}
       />
     </div>
@@ -485,13 +508,13 @@ function EditClientDialog({
   open,
   onOpenChange,
   client,
-  workers,
+  tutors,
   onSave,
 }: {
   open: boolean
   onOpenChange: (v: boolean) => void
   client: ClientItem | null
-  workers: WorkerUser[]
+  tutors: TutorUser[]
   onSave: (data: Partial<ClientItem>) => void
 }) {
   const unset = {
@@ -503,10 +526,14 @@ function EditClientDialog({
     platform: client?.platform || '',
     courseName: client?.courseName || '',
     deadline: client?.deadline ? client.deadline.slice(0, 10) : '',
-    assignedWorker:
-      client && typeof client.assignedWorker === 'object' && client.assignedWorker !== null
-        ? String(client.assignedWorker.id)
-        : '',
+    assignedTutor:
+      client && typeof client.assignedTutor === 'object' && client.assignedTutor !== null
+        ? String(client.assignedTutor.id)
+        : client && typeof client.assignedTutor === 'number'
+          ? String(client.assignedTutor)
+          : client && typeof client.assignedTutor === 'string'
+            ? client.assignedTutor
+            : '',
     notes: client?.notes || '',
   })
   React.useEffect(() => {
@@ -514,10 +541,14 @@ function EditClientDialog({
       platform: client?.platform || '',
       courseName: client?.courseName || '',
       deadline: client?.deadline ? client.deadline.slice(0, 10) : '',
-      assignedWorker:
-        client && typeof client.assignedWorker === 'object' && client.assignedWorker !== null
-          ? String(client.assignedWorker.id)
-          : '',
+      assignedTutor:
+        client && typeof client.assignedTutor === 'object' && client.assignedTutor !== null
+          ? String(client.assignedTutor.id)
+          : client && typeof client.assignedTutor === 'number'
+            ? String(client.assignedTutor)
+            : client && typeof client.assignedTutor === 'string'
+              ? client.assignedTutor
+              : '',
       notes: client?.notes || '',
     })
   }, [client])
@@ -584,18 +615,18 @@ function EditClientDialog({
                 />
               </div>
               <div className="grid gap-2">
-                <Label>Assigned Worker</Label>
+                <Label>Assigned Tutor</Label>
                 <Select
-                  value={formState.assignedWorker}
-                  onValueChange={(v) => setFormState((s) => ({ ...s, assignedWorker: v }))}
+                  value={formState.assignedTutor}
+                  onValueChange={(v) => setFormState((s) => ({ ...s, assignedTutor: v }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select worker" />
+                    <SelectValue placeholder="Select tutor" />
                   </SelectTrigger>
                   <SelectContent>
-                    {workers.map((w) => (
-                      <SelectItem key={String(w.id)} value={String(w.id)}>
-                        {w.fullName || w.email}
+                    {tutors.map((t) => (
+                      <SelectItem key={String(t.id)} value={String(t.id)}>
+                        {t.fullName || t.email}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -616,13 +647,20 @@ function EditClientDialog({
               </Button>
               <Button
                 onClick={() => {
+                  const tutorValue = formState.assignedTutor
+                    ? Number(formState.assignedTutor)
+                    : null
+                  console.log(
+                    'Edit form - assignedTutor value:',
+                    formState.assignedTutor,
+                    'converted to:',
+                    tutorValue,
+                  )
                   onSave({
                     platform: formState.platform,
                     courseName: formState.courseName,
                     deadline: formState.deadline,
-                    assignedWorker: formState.assignedWorker
-                      ? Number(formState.assignedWorker)
-                      : undefined,
+                    assignedTutor: tutorValue,
                     notes: formState.notes,
                   })
                   onOpenChange(false)

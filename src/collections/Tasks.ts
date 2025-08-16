@@ -15,7 +15,7 @@ export const Tasks: CollectionConfig = {
       'platform',
       'taskType',
       'status',
-      'worker',
+      'tutor',
       'dueDate',
       'score',
     ],
@@ -25,12 +25,12 @@ export const Tasks: CollectionConfig = {
     create: ({ req: { user } }) => {
       if (!user) return false
       const u = user as User
-      return u.role === 'ADMIN' || u.role === 'WORKER'
+      return u.role === 'ADMIN' || u.role === 'TUTOR'
     },
     update: ({ req: { user } }) => {
       if (!user) return false
       const u = user as User
-      return u.role === 'ADMIN' || u.role === 'WORKER'
+      return u.role === 'ADMIN' || u.role === 'TUTOR'
     },
     delete: ({ req: { user } }) => {
       if (!user) return false
@@ -102,16 +102,16 @@ export const Tasks: CollectionConfig = {
       ],
     },
     {
-      name: 'worker',
-      label: 'Worker',
+      name: 'tutor',
+      label: 'Tutor',
       type: 'relationship',
       relationTo: 'users',
       required: false,
       admin: {
-        description: 'Assigned worker (user with role WORKER)',
+        description: 'Assigned tutor (user with role TUTOR)',
       },
       filterOptions: {
-        role: { equals: 'WORKER' },
+        role: { equals: 'TUTOR' },
       },
     },
     {
@@ -152,8 +152,8 @@ export const Tasks: CollectionConfig = {
             | 'task_assigned'
             | 'task_completed'
             | 'client_onboarded'
-            | 'worker_added'
-            | 'worker_edited'
+            | 'tutor_added'
+            | 'tutor_edited'
           const base: {
             collection: 'activity-logs'
             data: {
@@ -183,11 +183,11 @@ export const Tasks: CollectionConfig = {
           }
           // Detect assignment change
           if (operation === 'update' && previousDoc) {
-            if (previousDoc.worker !== doc.worker) {
+            if (previousDoc.tutor !== doc.tutor) {
               base.data.type = 'task_assigned'
               base.data.title = `Task Assigned (${doc.taskId || doc.id})`
-              base.data.description = `Task ${doc.taskId || doc.id} assigned to worker #${doc.worker}`
-              base.data.metadata.workerId = doc.worker as unknown as number
+              base.data.description = `Task ${doc.taskId || doc.id} assigned to tutor #${doc.tutor}`
+              base.data.metadata.tutorId = doc.tutor as unknown as number
             } else if (previousDoc.status !== doc.status && doc.status === 'Completed') {
               base.data.type = 'task_completed'
               base.data.title = `Task Completed (${doc.taskId || doc.id})`

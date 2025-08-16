@@ -5,8 +5,8 @@ import config from '@payload-config'
 import { revalidatePath } from 'next/cache'
 import { getCurrentUser } from './user-actions'
 
-// Backend still uses 'workers'; UI may display Tutor instead.
-const WORKERS_COLLECTION = 'workers' as const
+// Backend collection slug (collection file named Tutors.ts but slug remains 'tutors')
+const TUTORS_COLLECTION = 'tutors' as const
 const USERS_COLLECTION = 'users' as const
 
 interface BaseUserRef {
@@ -14,9 +14,8 @@ interface BaseUserRef {
   fullName?: string
   email?: string
 }
-interface WorkerCollectionDoc {
+interface TutorCollectionDoc {
   id: number
-  workerId?: string | null
   user?: BaseUserRef | number | null
   performance?: {
     overallScore?: number | null
@@ -29,73 +28,89 @@ interface WorkerCollectionDoc {
   updatedAt: string
 }
 
-export interface WorkerDoc {
+export interface TutorDoc {
   id: number
-  workerId?: string | null
+  tutorId?: string | null
   user?: BaseUserRef | number | null
   fullName: string
   email: string
-  performance?: WorkerCollectionDoc['performance']
+  performance?: TutorCollectionDoc['performance']
   createdAt: string
   updatedAt: string
 }
 
-function toWorkerDoc(doc: WorkerCollectionDoc): WorkerDoc {
-  const userObj = typeof doc.user === 'object' && doc.user !== null ? doc.user : undefined
-  return {
-    id: doc.id,
-    workerId: doc.workerId || undefined,
-    user: doc.user || undefined,
-    fullName: userObj?.fullName || '',
-    email: userObj?.email || '',
-    performance: doc.performance,
-    createdAt: doc.createdAt,
-    updatedAt: doc.updatedAt,
-  }
-}
-
-export async function listWorkers(): Promise<WorkerDoc[]> {
+export async function listTutors(): Promise<TutorDoc[]> {
   const payload = await getPayload({ config })
   const result = await payload.find({
-    collection: WORKERS_COLLECTION,
+    collection: TUTORS_COLLECTION,
     limit: 500,
     sort: '-createdAt',
-    depth: 1,
+    depth: 2, // Increase depth to get User data including tutorId
   })
-  return (result.docs as WorkerCollectionDoc[]).map(toWorkerDoc)
+
+  return (result.docs as TutorCollectionDoc[]).map((doc) => {
+    const userObj =
+      typeof doc.user === 'object' && doc.user !== null ? (doc.user as BaseUserRef) : undefined
+    return {
+      id: doc.id,
+      tutorId: `TU${doc.id}`, // Use Tutor document ID as display ID
+      user: doc.user || undefined,
+      fullName: userObj?.fullName || '',
+      email: userObj?.email || '',
+      performance: doc.performance,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+    }
+  })
 }
 
-export async function createWorker(data: { userId: number }): Promise<WorkerDoc | null> {
+export async function createTutor(data: { userId: number }): Promise<TutorDoc | null> {
   try {
     const payload = await getPayload({ config })
     const baseUser = await payload.findByID({ collection: USERS_COLLECTION, id: data.userId })
-    if (baseUser.role !== 'WORKER') throw new Error('Base user must have role WORKER')
+    if (baseUser.role !== 'TUTOR') throw new Error('Base user must have role TUTOR')
 
     const created = await payload.create({
-      collection: WORKERS_COLLECTION,
+      collection: TUTORS_COLLECTION,
       data: { user: data.userId },
-      depth: 1,
+      depth: 2,
     })
-    return toWorkerDoc(created as WorkerCollectionDoc)
+
+    const createdDoc = created as TutorCollectionDoc
+    const userObj =
+      typeof createdDoc.user === 'object' && createdDoc.user !== null
+        ? (createdDoc.user as BaseUserRef)
+        : undefined
+
+    return {
+      id: createdDoc.id,
+      tutorId: `TU${createdDoc.id}`, // Use Tutor document ID as display ID
+      user: createdDoc.user || undefined,
+      fullName: userObj?.fullName || '',
+      email: userObj?.email || '',
+      performance: createdDoc.performance,
+      createdAt: createdDoc.createdAt,
+      updatedAt: createdDoc.updatedAt,
+    }
   } catch (e) {
-    console.error('Failed to create worker', e)
+    console.error('Failed to create tutor', e)
     return null
   }
 }
 
-export async function deleteWorker(id: number): Promise<boolean> {
+export async function deleteTutor(id: number): Promise<boolean> {
   try {
     const payload = await getPayload({ config })
-    await payload.delete({ collection: WORKERS_COLLECTION, id })
-    revalidatePath('/admin-dashboard/workers')
+    await payload.delete({ collection: TUTORS_COLLECTION, id })
+    revalidatePath('/admin-dashboard/tutors')
     return true
   } catch (e) {
-    console.error('Failed to delete worker', e)
+    console.error('Failed to delete tutor', e)
     return false
   }
 }
 
-export async function getCurrentWorkerStats(): Promise<{
+export async function getCurrentTutorStats(): Promise<{
   userName: string
   totalTasks: number
   completedTasks: number
@@ -103,11 +118,11 @@ export async function getCurrentWorkerStats(): Promise<{
 } | null> {
   try {
     const user = await getCurrentUser()
-    if (!user || user.role !== 'WORKER') return null
+    if (!user || user.role !== 'TUTOR') return null
     const payload = await getPayload({ config })
     const tasksRes = await payload.find({
       collection: 'tasks',
-      where: { worker: { equals: user.id } },
+      where: { tutor: { equals: user.id } },
       limit: 500,
       sort: '-createdAt',
     })
@@ -116,13 +131,13 @@ export async function getCurrentWorkerStats(): Promise<{
     const totalTasks = tasks.length
     const pendingTasks = totalTasks - completedTasks
     return {
-      userName: user.fullName || user.email || 'Worker',
+      userName: user.fullName || user.email || 'Tutor',
       totalTasks,
       completedTasks,
       pendingTasks,
     }
   } catch (e) {
-    console.error('Failed to get current worker stats', e)
+    console.error('Failed to get current tutor stats', e)
     return null
   }
 }
@@ -154,7 +169,7 @@ function computePriority(hoursLeft: number): 'high' | 'medium' | 'low' {
   return 'low'
 }
 
-export interface WorkerDashboardData {
+export interface TutorDashboardData {
   stats: {
     userName: string
     totalTasks: number
@@ -165,14 +180,14 @@ export interface WorkerDashboardData {
   upcomingDeadlines: DeadlineItem[]
 }
 
-export async function getWorkerDashboardData(): Promise<WorkerDashboardData | null> {
+export async function getTutorDashboardData(): Promise<TutorDashboardData | null> {
   try {
     const user = await getCurrentUser()
-    if (!user || user.role !== 'WORKER') return null
+    if (!user || user.role !== 'TUTOR') return null
     const payload = await getPayload({ config })
     const tasksRes = await payload.find({
       collection: 'tasks',
-      where: { worker: { equals: user.id } },
+      where: { tutor: { equals: user.id } },
       depth: 2,
       limit: 500,
       sort: '-createdAt',
@@ -231,7 +246,7 @@ export async function getWorkerDashboardData(): Promise<WorkerDashboardData | nu
     const pendingTasks = totalTasks - completedTasks
     return {
       stats: {
-        userName: user.fullName || user.email || 'Worker',
+        userName: user.fullName || user.email || 'Tutor',
         totalTasks,
         completedTasks,
         pendingTasks,
@@ -240,13 +255,13 @@ export async function getWorkerDashboardData(): Promise<WorkerDashboardData | nu
       upcomingDeadlines: upcomingDeadlines.slice(0, 6),
     }
   } catch (e) {
-    console.error('Failed to get worker dashboard data', e)
+    console.error('Failed to get tutor dashboard data', e)
     return null
   }
 }
 
 // ------------------------------------------------------------
-// Additional worker-focused data helpers (replace mock data)
+// Additional tutor-focused data helpers (replace mock data)
 // ------------------------------------------------------------
 
 export interface AssignedClientSummary {
@@ -301,17 +316,16 @@ function classifyDeadline(dueISO: string): 'high' | 'medium' | 'low' {
   return 'low'
 }
 
-// List clients assigned to the current worker with aggregated task stats
-export async function listAssignedClientsForCurrentWorker(): Promise<AssignedClientSummary[]> {
+// List clients assigned to the current tutor with aggregated task stats
+export async function listAssignedClientsForCurrentTutor(): Promise<AssignedClientSummary[]> {
   try {
     const user = await getCurrentUser()
-    if (!user || user.role !== 'WORKER') return []
+    if (!user || user.role !== 'TUTOR') return []
     const payload = await getPayload({ config })
-    // Fetch clients assigned to this worker
+    // Fetch clients assigned to this tutor
     type ClientDoc = {
       id: number
       name?: string
-      clientId?: string
       platform?: string
       courseName?: string
       createdAt: string
@@ -319,14 +333,14 @@ export async function listAssignedClientsForCurrentWorker(): Promise<AssignedCli
     }
     const clientsRes = await payload.find({
       collection: 'clients',
-      where: { assignedWorker: { equals: user.id } },
+      where: { assignedTutor: { equals: user.id } },
       limit: 300,
       depth: 1,
       sort: '-updatedAt',
     })
     if (!clientsRes.docs.length) return []
     const clientIds = (clientsRes.docs as ClientDoc[]).map((c) => c.id)
-    // Fetch tasks for these clients assigned to this worker
+    // Fetch tasks for these clients assigned to this tutor
     type TaskDoc = {
       id: number
       client: number | ClientDoc
@@ -337,7 +351,7 @@ export async function listAssignedClientsForCurrentWorker(): Promise<AssignedCli
     const tasksRes = await payload.find({
       collection: 'tasks',
       where: {
-        and: [{ client: { in: clientIds } }, { worker: { equals: user.id } }],
+        and: [{ client: { in: clientIds } }, { tutor: { equals: user.id } }],
       },
       depth: 0,
       limit: 1000,
@@ -383,7 +397,7 @@ export async function listAssignedClientsForCurrentWorker(): Promise<AssignedCli
       else if (nextDeadline) priority = classifyDeadline(nextDeadline)
       return {
         id: c.id,
-        name: c.name || c.clientId || `Client ${c.id}`,
+        name: c.name || `Client ${c.id}`,
         platform: c.platform || 'Cengage',
         courseName: c.courseName || 'Course',
         joinDate: c.createdAt,
@@ -407,15 +421,15 @@ export async function listAssignedClientsForCurrentWorker(): Promise<AssignedCli
 }
 
 // List tasks for a single client (for modal)
-export async function listClientTasksForWorker(clientId: number): Promise<ClientTaskItem[]> {
+export async function listClientTasksForTutor(clientId: number): Promise<ClientTaskItem[]> {
   try {
     const user = await getCurrentUser()
-    if (!user || user.role !== 'WORKER') return []
+    if (!user || user.role !== 'TUTOR') return []
     const payload = await getPayload({ config })
     const tasksRes = await payload.find({
       collection: 'tasks',
       where: {
-        and: [{ client: { equals: clientId } }, { worker: { equals: user.id } }],
+        and: [{ client: { equals: clientId } }, { tutor: { equals: user.id } }],
       },
       depth: 0,
       limit: 200,
@@ -442,20 +456,20 @@ export async function listClientTasksForWorker(clientId: number): Promise<Client
       priority: classifyDeadline(t.dueDate),
     }))
   } catch (e) {
-    console.error('Failed to list client tasks for worker', e)
+    console.error('Failed to list client tasks for tutor', e)
     return []
   }
 }
 
-// List all tasks for current worker (used in submit-task page)
-export async function listAssignedTasksForCurrentWorker(): Promise<DashboardTask[]> {
+// List all tasks for current tutor (used in submit-task page)
+export async function listAssignedTasksForCurrentTutor(): Promise<DashboardTask[]> {
   try {
     const user = await getCurrentUser()
-    if (!user || user.role !== 'WORKER') return []
+    if (!user || user.role !== 'TUTOR') return []
     const payload = await getPayload({ config })
     const tasksRes = await payload.find({
       collection: 'tasks',
-      where: { worker: { equals: user.id } },
+      where: { tutor: { equals: user.id } },
       depth: 2,
       limit: 500,
       sort: '-dueDate',
@@ -491,7 +505,7 @@ export async function listAssignedTasksForCurrentWorker(): Promise<DashboardTask
       }
     })
   } catch (e) {
-    console.error('Failed to list assigned tasks for worker', e)
+    console.error('Failed to list assigned tasks for tutor', e)
     return []
   }
 }

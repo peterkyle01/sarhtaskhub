@@ -19,7 +19,7 @@ interface TaskDoc {
   createdAt?: string
   updatedAt?: string
   client?: number | { id: number; name?: string }
-  worker?: number | { id: number; fullName?: string }
+  tutor?: number | { id: number; fullName?: string }
 }
 
 function startOfWeek(date = new Date()) {

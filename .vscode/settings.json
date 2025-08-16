@@ -37,4 +37,5 @@
       "source.fixAll.eslint": "explicit"
     }
   }
+  //"terminal.integrated.defaultProfile.linux": "GitHub Copilot",
 }
