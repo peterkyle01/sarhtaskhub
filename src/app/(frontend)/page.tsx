@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { login } from '@/server-actions/user-actions'
+import { login } from '@/server-actions/auth-actions'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -24,7 +24,7 @@ import { Eye, EyeOff, Loader2, ServerCog } from 'lucide-react'
 import Link from 'next/link'
 import { ThemeToggle } from '@/components/custom/theme-toggle'
 
-type UserRole = 'ADMIN' | 'TUTOR' | 'CLIENT'
+type UserRole = 'admin' | 'tutor'
 interface UserWithRole {
   role?: UserRole
 }
@@ -53,18 +53,12 @@ export default function SignInPage() {
     setError(null)
     startTransition(async () => {
       const res = await login(values.email, values.password)
-      if (res.error) {
+      if (!res.success) {
         setError(res.error)
         return
       }
       const role = (res.user as UserWithRole | undefined)?.role
-      // Explicit role to dashboard path mapping (TUTORs are Tutors in UI)
-      const roleToPath: Record<UserRole, string> = {
-        ADMIN: '/admin-dashboard',
-        TUTOR: '/tutors-dashboard',
-        CLIENT: '/tutors-dashboard', // adjust if/when a dedicated client dashboard is added
-      }
-      const target = role && roleToPath[role] ? roleToPath[role] : '/tutors-dashboard'
+      const target = role === 'admin' ? '/admin' : '/tutor'
       router.replace(target)
     })
   }

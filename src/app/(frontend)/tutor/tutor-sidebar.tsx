@@ -16,30 +16,35 @@ import {
   SidebarRail,
   useSidebar,
 } from '@/components/ui/sidebar'
-import { FileText, Home, Users, UserCheck, BarChart3 } from 'lucide-react'
+import { Home, Users, Upload } from 'lucide-react'
+import Link from 'next/link'
 import { LogoutButton } from '@/components/custom/logout-button'
 import { displayRole } from '@/lib/user-utils'
-import Link from 'next/link'
 import type { Config } from '@/payload-types'
 import { AppBrand } from '@/components/custom/app-brand'
 
-// Type alias for user
+// Type alias for generated user type
 type AppUser = Config['user']
 
 const navigationItems = [
-  { title: 'Dashboard', url: '/admin-dashboard', icon: Home },
-  { title: 'Users', url: '/admin-dashboard/users', icon: Users },
-  { title: 'Clients', url: '/admin-dashboard/clients', icon: UserCheck },
-  { title: 'Tutors', url: '/admin-dashboard/tutors', icon: UserCheck },
-  { title: 'Tasks', url: '/admin-dashboard/tasks', icon: FileText },
-  { title: 'Reports', url: '/admin-dashboard/reports', icon: BarChart3 },
+  { title: 'Dashboard', url: '/tutors-dashboard', icon: Home },
+  { title: 'Assigned Clients', url: '/tutors-dashboard/assigned-clients', icon: Users },
+  { title: 'Submit Task', url: '/tutors-dashboard/submit-task', icon: Upload },
 ]
 
-export function AdminSidebar({ user }: { user: AppUser | null }) {
+export function TutorSidebar({ user }: { user: AppUser | null }) {
   const { isMobile, setOpenMobile } = useSidebar()
-  const displayName = user?.fullName || user?.email || 'Admin'
+
+  // Handle different user types - SuperAdmin doesn't have fullName property
+  const displayName = (() => {
+    if (!user) return 'Tutor'
+    if ('fullName' in user && user.fullName) return user.fullName
+    return user.email || 'Tutor'
+  })()
+
   const avatarURL = (() => {
-    const pic = user?.profilePicture
+    if (!user || !('profilePicture' in user)) return '/placeholder.svg'
+    const pic = user.profilePicture
     if (pic && typeof pic === 'object' && 'url' in pic && typeof pic.url === 'string') {
       return pic.url || '/placeholder.svg'
     }
@@ -53,7 +58,7 @@ export function AdminSidebar({ user }: { user: AppUser | null }) {
   return (
     <Sidebar className="border-r border-border/40 sidebar-gradient backdrop-blur-xl text-[var(--sidebar-foreground)] transition-all duration-300 shadow-lg">
       <SidebarHeader className="border-b border-border/20 py-2 sm:py-3 px-2 sm:px-3 surface-gradient">
-        <AppBrand panelLabel="Admin" />
+        <AppBrand panelLabel="Tutor" />
       </SidebarHeader>
 
       <SidebarContent className="px-1 sm:px-3 py-2 sm:py-4">
@@ -107,7 +112,7 @@ export function AdminSidebar({ user }: { user: AppUser | null }) {
               <div className="flex items-center gap-1">
                 <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-green-500 animate-pulse"></div>
                 <span className="text-[10px] sm:text-xs text-muted-foreground font-medium">
-                  {displayRole(user?.role || 'ADMIN')}
+                  {displayRole(user?.role || 'TUTOR')}
                 </span>
               </div>
             </div>

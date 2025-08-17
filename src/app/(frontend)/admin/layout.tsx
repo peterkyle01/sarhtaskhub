@@ -1,19 +1,9 @@
 import React from 'react'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
-import { getCurrentUser } from '@/server-actions/user-actions'
+import { getCurrentUser } from '@/server-actions/auth-actions'
 import { AdminSidebar } from './admin-sidebar'
 import { AutoCollapseWrapper } from './auto-collapse-wrapper'
-import { redirect } from 'next/navigation'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
-export const fetchCache = 'force-no-store'
-
-// Remove incompatible interface extension; use generated type directly
-// type BaseUser = Config['user']
-// interface AppUser extends BaseUser { fullName?: string; role?: 'ADMIN' | 'TUTOR'; profilePicture?: { url?: string } | null }
-// Generated type already includes fullName, role, profilePicture (number | Media)
-// Use alias for clarity.
 export default async function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser()
   return (

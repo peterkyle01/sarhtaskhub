@@ -1,7 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
-const Tutors: CollectionConfig = {
-  slug: 'tutors',
+const Admins: CollectionConfig = {
+  slug: 'admins',
   auth: true,
   fields: [
     { name: 'fullName', type: 'text', required: true },
@@ -15,15 +15,8 @@ const Tutors: CollectionConfig = {
         description: 'Upload your profile picture',
       },
     },
-    {
-      name: 'subjects',
-      type: 'relationship',
-      relationTo: 'subjects',
-      hasMany: true,
-      required: false,
-    },
-    { name: 'role', type: 'text', defaultValue: 'tutor', admin: { readOnly: true } },
+    { name: 'role', type: 'text', defaultValue: 'admin', admin: { readOnly: true } },
   ],
 }
 
-export default Tutors
+export default Admins

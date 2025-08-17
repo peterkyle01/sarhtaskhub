@@ -16,27 +16,37 @@ import {
   SidebarRail,
   useSidebar,
 } from '@/components/ui/sidebar'
-import { Home, Users, Upload } from 'lucide-react'
-import Link from 'next/link'
+import { FileText, Home, UserCheck, BookOpen } from 'lucide-react'
 import { LogoutButton } from '@/components/custom/logout-button'
 import { displayRole } from '@/lib/user-utils'
+import Link from 'next/link'
 import type { Config } from '@/payload-types'
 import { AppBrand } from '@/components/custom/app-brand'
 
-// Type alias for generated user type
+// Type alias for user
 type AppUser = Config['user']
 
 const navigationItems = [
-  { title: 'Dashboard', url: '/tutors-dashboard', icon: Home },
-  { title: 'Assigned Clients', url: '/tutors-dashboard/assigned-clients', icon: Users },
-  { title: 'Submit Task', url: '/tutors-dashboard/submit-task', icon: Upload },
+  { title: 'Dashboard', url: '/admin', icon: Home },
+  { title: 'Subjects', url: '/admin/subjects', icon: BookOpen },
+  { title: 'Clients', url: '/admin/clients', icon: UserCheck },
+  { title: 'Tutors', url: '/admin/tutors', icon: UserCheck },
+  { title: 'Tasks', url: '/admin/tasks', icon: FileText },
 ]
 
-export function TutorSidebar({ user }: { user: AppUser | null }) {
+export function AdminSidebar({ user }: { user: AppUser | null }) {
   const { isMobile, setOpenMobile } = useSidebar()
-  const displayName = user?.fullName || user?.email || 'Tutor'
+
+  // Handle different user types - SuperAdmin doesn't have fullName property
+  const displayName = (() => {
+    if (!user) return 'Admin'
+    if ('fullName' in user && user.fullName) return user.fullName
+    return user.email || 'Admin'
+  })()
+
   const avatarURL = (() => {
-    const pic = user?.profilePicture
+    if (!user || !('profilePicture' in user)) return '/placeholder.svg'
+    const pic = user.profilePicture
     if (pic && typeof pic === 'object' && 'url' in pic && typeof pic.url === 'string') {
       return pic.url || '/placeholder.svg'
     }
@@ -50,7 +60,7 @@ export function TutorSidebar({ user }: { user: AppUser | null }) {
   return (
     <Sidebar className="border-r border-border/40 sidebar-gradient backdrop-blur-xl text-[var(--sidebar-foreground)] transition-all duration-300 shadow-lg">
       <SidebarHeader className="border-b border-border/20 py-2 sm:py-3 px-2 sm:px-3 surface-gradient">
-        <AppBrand panelLabel="Tutor" />
+        <AppBrand panelLabel="Admin" />
       </SidebarHeader>
 
       <SidebarContent className="px-1 sm:px-3 py-2 sm:py-4">
@@ -104,7 +114,7 @@ export function TutorSidebar({ user }: { user: AppUser | null }) {
               <div className="flex items-center gap-1">
                 <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-green-500 animate-pulse"></div>
                 <span className="text-[10px] sm:text-xs text-muted-foreground font-medium">
-                  {displayRole(user?.role || 'TUTOR')}
+                  {displayRole(user?.role || 'ADMIN')}
                 </span>
               </div>
             </div>

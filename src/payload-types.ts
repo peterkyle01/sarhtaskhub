@@ -63,28 +63,34 @@ export type SupportedTimezones =
 
 export interface Config {
   auth: {
-    users: UserAuthOperations;
+    superadmins: SuperadminAuthOperations;
+    admins: AdminAuthOperations;
+    tutors: TutorAuthOperations;
   };
   blocks: {};
   collections: {
-    users: User;
-    media: Media;
-    clients: Client;
+    superadmins: Superadmin;
+    admins: Admin;
     tutors: Tutor;
+    clients: Client;
+    subjects: Subject;
+    topics: Topic;
     tasks: Task;
-    'activity-logs': ActivityLog;
+    media: Media;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
   collectionsJoins: {};
   collectionsSelect: {
-    users: UsersSelect<false> | UsersSelect<true>;
-    media: MediaSelect<false> | MediaSelect<true>;
-    clients: ClientsSelect<false> | ClientsSelect<true>;
+    superadmins: SuperadminsSelect<false> | SuperadminsSelect<true>;
+    admins: AdminsSelect<false> | AdminsSelect<true>;
     tutors: TutorsSelect<false> | TutorsSelect<true>;
+    clients: ClientsSelect<false> | ClientsSelect<true>;
+    subjects: SubjectsSelect<false> | SubjectsSelect<true>;
+    topics: TopicsSelect<false> | TopicsSelect<true>;
     tasks: TasksSelect<false> | TasksSelect<true>;
-    'activity-logs': ActivityLogsSelect<false> | ActivityLogsSelect<true>;
+    media: MediaSelect<false> | MediaSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
@@ -95,15 +101,58 @@ export interface Config {
   globals: {};
   globalsSelect: {};
   locale: null;
-  user: User & {
-    collection: 'users';
-  };
+  user:
+    | (Superadmin & {
+        collection: 'superadmins';
+      })
+    | (Admin & {
+        collection: 'admins';
+      })
+    | (Tutor & {
+        collection: 'tutors';
+      });
   jobs: {
     tasks: unknown;
     workflows: unknown;
   };
 }
-export interface UserAuthOperations {
+export interface SuperadminAuthOperations {
+  forgotPassword: {
+    email: string;
+    password: string;
+  };
+  login: {
+    email: string;
+    password: string;
+  };
+  registerFirstUser: {
+    email: string;
+    password: string;
+  };
+  unlock: {
+    email: string;
+    password: string;
+  };
+}
+export interface AdminAuthOperations {
+  forgotPassword: {
+    email: string;
+    password: string;
+  };
+  login: {
+    email: string;
+    password: string;
+  };
+  registerFirstUser: {
+    email: string;
+    password: string;
+  };
+  unlock: {
+    email: string;
+    password: string;
+  };
+}
+export interface TutorAuthOperations {
   forgotPassword: {
     email: string;
     password: string;
@@ -123,20 +172,42 @@ export interface UserAuthOperations {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "users".
+ * via the `definition` "superadmins".
  */
-export interface User {
+export interface Superadmin {
+  id: number;
+  role?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "admins".
+ */
+export interface Admin {
   id: number;
   fullName: string;
+  phone?: string | null;
   /**
-   * Include country code, e.g. +1 555 123 4567
+   * Upload your profile picture
    */
-  phone: string;
-  /**
-   * Determines access level within the system.
-   */
-  role: 'ADMIN' | 'TUTOR' | 'CLIENT';
   profilePicture?: (number | null) | Media;
+  role?: string | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -177,48 +248,67 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "clients".
+ * via the `definition` "tutors".
  */
-export interface Client {
+export interface Tutor {
   id: number;
+  fullName: string;
+  phone?: string | null;
   /**
-   * Base user record (must have role CLIENT).
+   * Upload your profile picture
    */
-  user: number | User;
-  /**
-   * Internal/client project or account name.
-   */
-  name?: string | null;
-  platform?: ('Cengage' | 'ALEKS') | null;
-  courseName?: string | null;
-  deadline?: string | null;
-  progress?: ('Not Started' | 'In Progress' | 'Completed' | 'Overdue') | null;
-  /**
-   * User with role TUTOR
-   */
-  assignedTutor?: (number | null) | User;
-  notes?: string | null;
+  profilePicture?: (number | null) | Media;
+  subjects?: (number | Subject)[] | null;
+  role?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subjects".
+ */
+export interface Subject {
+  id: number;
+  name: string;
   updatedAt: string;
   createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "tutors".
+ * via the `definition` "clients".
  */
-export interface Tutor {
+export interface Client {
   id: number;
-  /**
-   * Base user record (must have role TUTOR).
-   */
-  user: number | User;
-  tasksAssigned?: (number | Client)[] | null;
-  performance?: {
-    overallScore?: number | null;
-    tasksCompleted?: number | null;
-    averageCompletionTime?: number | null;
-    lastEvaluation?: string | null;
-    notes?: string | null;
-  };
+  name: string;
+  email: string;
+  phone?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "topics".
+ */
+export interface Topic {
+  id: number;
+  name: string;
+  subject: number | Subject;
+  parent?: (number | null) | Topic;
   updatedAt: string;
   createdAt: string;
 }
@@ -228,61 +318,12 @@ export interface Tutor {
  */
 export interface Task {
   id: number;
-  /**
-   * Auto-generated (e.g., TK123456)
-   */
-  taskId?: string | null;
-  /**
-   * Reference to the associated client
-   */
+  name: string;
+  tutor: number | Tutor;
   client: number | Client;
-  platform: 'Cengage' | 'ALEKS' | 'MATLAB';
-  taskType: 'Assignment' | 'Quiz' | 'Course';
-  dueDate: string;
-  status: 'Pending' | 'In Progress' | 'Completed';
-  /**
-   * Assigned tutor (user with role TUTOR)
-   */
-  tutor?: (number | null) | User;
-  /**
-   * Score / grade if applicable
-   */
+  topic: number | Topic;
+  status: 'pending' | 'completed';
   score?: number | null;
-  notes?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * System activity and audit trail entries
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "activity-logs".
- */
-export interface ActivityLog {
-  id: number;
-  type:
-    | 'task_created'
-    | 'task_updated'
-    | 'task_assigned'
-    | 'task_completed'
-    | 'client_onboarded'
-    | 'tutor_added'
-    | 'tutor_edited';
-  title: string;
-  description?: string | null;
-  actor?: (number | null) | User;
-  task?: (number | null) | Task;
-  client?: (number | null) | Client;
-  tutor?: (number | null) | User;
-  metadata?:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -294,34 +335,51 @@ export interface PayloadLockedDocument {
   id: number;
   document?:
     | ({
-        relationTo: 'users';
-        value: number | User;
+        relationTo: 'superadmins';
+        value: number | Superadmin;
       } | null)
     | ({
-        relationTo: 'media';
-        value: number | Media;
-      } | null)
-    | ({
-        relationTo: 'clients';
-        value: number | Client;
+        relationTo: 'admins';
+        value: number | Admin;
       } | null)
     | ({
         relationTo: 'tutors';
         value: number | Tutor;
       } | null)
     | ({
+        relationTo: 'clients';
+        value: number | Client;
+      } | null)
+    | ({
+        relationTo: 'subjects';
+        value: number | Subject;
+      } | null)
+    | ({
+        relationTo: 'topics';
+        value: number | Topic;
+      } | null)
+    | ({
         relationTo: 'tasks';
         value: number | Task;
       } | null)
     | ({
-        relationTo: 'activity-logs';
-        value: number | ActivityLog;
+        relationTo: 'media';
+        value: number | Media;
       } | null);
   globalSlug?: string | null;
-  user: {
-    relationTo: 'users';
-    value: number | User;
-  };
+  user:
+    | {
+        relationTo: 'superadmins';
+        value: number | Superadmin;
+      }
+    | {
+        relationTo: 'admins';
+        value: number | Admin;
+      }
+    | {
+        relationTo: 'tutors';
+        value: number | Tutor;
+      };
   updatedAt: string;
   createdAt: string;
 }
@@ -331,10 +389,19 @@ export interface PayloadLockedDocument {
  */
 export interface PayloadPreference {
   id: number;
-  user: {
-    relationTo: 'users';
-    value: number | User;
-  };
+  user:
+    | {
+        relationTo: 'superadmins';
+        value: number | Superadmin;
+      }
+    | {
+        relationTo: 'admins';
+        value: number | Admin;
+      }
+    | {
+        relationTo: 'tutors';
+        value: number | Tutor;
+      };
   key?: string | null;
   value?:
     | {
@@ -361,13 +428,10 @@ export interface PayloadMigration {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "users_select".
+ * via the `definition` "superadmins_select".
  */
-export interface UsersSelect<T extends boolean = true> {
-  fullName?: T;
-  phone?: T;
+export interface SuperadminsSelect<T extends boolean = true> {
   role?: T;
-  profilePicture?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -387,6 +451,104 @@ export interface UsersSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "admins_select".
+ */
+export interface AdminsSelect<T extends boolean = true> {
+  fullName?: T;
+  phone?: T;
+  profilePicture?: T;
+  role?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  email?: T;
+  resetPasswordToken?: T;
+  resetPasswordExpiration?: T;
+  salt?: T;
+  hash?: T;
+  loginAttempts?: T;
+  lockUntil?: T;
+  sessions?:
+    | T
+    | {
+        id?: T;
+        createdAt?: T;
+        expiresAt?: T;
+      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tutors_select".
+ */
+export interface TutorsSelect<T extends boolean = true> {
+  fullName?: T;
+  phone?: T;
+  profilePicture?: T;
+  subjects?: T;
+  role?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  email?: T;
+  resetPasswordToken?: T;
+  resetPasswordExpiration?: T;
+  salt?: T;
+  hash?: T;
+  loginAttempts?: T;
+  lockUntil?: T;
+  sessions?:
+    | T
+    | {
+        id?: T;
+        createdAt?: T;
+        expiresAt?: T;
+      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clients_select".
+ */
+export interface ClientsSelect<T extends boolean = true> {
+  name?: T;
+  email?: T;
+  phone?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subjects_select".
+ */
+export interface SubjectsSelect<T extends boolean = true> {
+  name?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "topics_select".
+ */
+export interface TopicsSelect<T extends boolean = true> {
+  name?: T;
+  subject?: T;
+  parent?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tasks_select".
+ */
+export interface TasksSelect<T extends boolean = true> {
+  name?: T;
+  tutor?: T;
+  client?: T;
+  topic?: T;
+  status?: T;
+  score?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
@@ -403,74 +565,6 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "clients_select".
- */
-export interface ClientsSelect<T extends boolean = true> {
-  user?: T;
-  name?: T;
-  platform?: T;
-  courseName?: T;
-  deadline?: T;
-  progress?: T;
-  assignedTutor?: T;
-  notes?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "tutors_select".
- */
-export interface TutorsSelect<T extends boolean = true> {
-  user?: T;
-  tasksAssigned?: T;
-  performance?:
-    | T
-    | {
-        overallScore?: T;
-        tasksCompleted?: T;
-        averageCompletionTime?: T;
-        lastEvaluation?: T;
-        notes?: T;
-      };
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "tasks_select".
- */
-export interface TasksSelect<T extends boolean = true> {
-  taskId?: T;
-  client?: T;
-  platform?: T;
-  taskType?: T;
-  dueDate?: T;
-  status?: T;
-  tutor?: T;
-  score?: T;
-  notes?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "activity-logs_select".
- */
-export interface ActivityLogsSelect<T extends boolean = true> {
-  type?: T;
-  title?: T;
-  description?: T;
-  actor?: T;
-  task?: T;
-  client?: T;
-  tutor?: T;
-  metadata?: T;
-  updatedAt?: T;
-  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

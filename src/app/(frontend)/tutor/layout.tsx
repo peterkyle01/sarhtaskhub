@@ -1,7 +1,7 @@
 import React from 'react'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { AutoCollapseWrapper } from './auto-collapse-wrapper'
-import { getCurrentUser } from '@/server-actions/user-actions'
+import { getCurrentUser } from '@/server-actions/auth-actions'
 import { TutorSidebar } from './tutor-sidebar'
 
 export const dynamic = 'force-dynamic'
