@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { LogOut } from 'lucide-react'
-import { logout } from '@/server-actions/user-actions'
+import { logout } from '@/server-actions/auth-actions'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 

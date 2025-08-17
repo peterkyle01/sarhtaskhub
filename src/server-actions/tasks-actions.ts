@@ -1,186 +1,231 @@
 'use server'
 
-import { getPayload, type GeneratedTypes } from 'payload'
+import { getPayload } from 'payload'
 import config from '@payload-config'
-import { revalidatePath } from 'next/cache'
+import { Task } from '@/payload-types'
 
-// Constants / validation helpers
-const TASKS_COLLECTION = 'tasks' as const
-const ALLOWED_PLATFORMS = ['Cengage', 'ALEKS', 'MATLAB'] as const
-const ALLOWED_TASK_TYPES = ['Assignment', 'Quiz', 'Course'] as const
-const ALLOWED_STATUS = ['Pending', 'In Progress', 'Completed'] as const
+export type TaskDoc = Task
 
-type Platform = (typeof ALLOWED_PLATFORMS)[number]
-type TaskType = (typeof ALLOWED_TASK_TYPES)[number]
-type Status = (typeof ALLOWED_STATUS)[number]
-
-function normText(v: FormDataEntryValue | null, required = false): string | undefined {
-  if (v == null) return required ? '' : undefined
-  const s = String(v).trim()
-  if (required && !s) return ''
-  return s || undefined
-}
-
-function normNumber(v: string | undefined): number | undefined {
-  if (!v) return undefined
-  if (/^\d+$/.test(v)) {
-    const n = Number(v)
-    return Number.isNaN(n) ? undefined : n
-  }
-  return undefined // only supporting numeric PKs for now
-}
-
-// Create Task from a form submission
-export async function createTask(formData: FormData) {
-  const payload = await getPayload({ config })
-
-  const clientRaw = normText(formData.get('client'), true)
-  const platformRaw = normText(formData.get('platform'), true)
-  const taskTypeRaw = normText(formData.get('taskType'), true)
-  const dueDate = normText(formData.get('dueDate'), true)
-  const tutorRaw = normText(formData.get('tutor'))
-  const notes = normText(formData.get('notes'))
-
-  if (!clientRaw || !platformRaw || !taskTypeRaw || !dueDate)
-    throw new Error('Missing required fields')
-  if (!ALLOWED_PLATFORMS.includes(platformRaw as Platform)) throw new Error('Invalid platform')
-  if (!ALLOWED_TASK_TYPES.includes(taskTypeRaw as TaskType)) throw new Error('Invalid task type')
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) throw new Error('Invalid due date format (YYYY-MM-DD)')
-
-  const platform = platformRaw as Platform
-  const taskType = taskTypeRaw as TaskType
-  const client = normNumber(clientRaw)
-  if (client == null) throw new Error('Invalid client reference')
-  const tutor = tutorRaw ? normNumber(tutorRaw) : undefined
-  console.log('data sent', { client, platform, taskType, dueDate, tutor, notes })
-  try {
-    const created = await payload.create({
-      collection: TASKS_COLLECTION,
-      data: {
-        client,
-        platform,
-        taskType,
-        dueDate,
-        status: 'Pending' as Status,
-        tutor: tutor ?? undefined,
-        notes,
-      },
-    })
-    revalidatePath('/admin-dashboard/tasks')
-    return created
-  } catch (e) {
-    console.error('Failed to create task', e)
-    throw new Error('Failed to create task')
-  }
-}
-
-// Assign / reassign a tutor to a task
-export async function assignTutorToTask(
-  taskId: number,
-  tutorId: number | null,
-): Promise<{ success: boolean; error?: string }> {
+export async function listTasks(): Promise<TaskDoc[]> {
   try {
     const payload = await getPayload({ config })
-    await payload.update({
-      collection: TASKS_COLLECTION,
-      id: taskId,
-      data: { tutor: tutorId ?? null },
-    })
-    revalidatePath('/admin-dashboard/tasks')
-    return { success: true }
-  } catch (e: unknown) {
-    console.error('Failed to assign tutor', e)
-    return { success: false, error: e instanceof Error ? e.message : 'Failed to assign tutor' }
-  }
-}
 
-// Update task status, optional score and notes
-export async function updateTaskStatus(
-  taskId: number,
-  status: Status,
-  opts: { score?: number | null; notes?: string | null } = {},
-): Promise<{ success: boolean; error?: string }> {
-  if (!ALLOWED_STATUS.includes(status)) return { success: false, error: 'Invalid status' }
-  if (opts.score != null) {
-    if (typeof opts.score !== 'number' || opts.score < 0 || opts.score > 100) {
-      return { success: false, error: 'Score must be 0-100' }
-    }
-  }
-  try {
-    const payload = await getPayload({ config })
-    await payload.update({
-      collection: TASKS_COLLECTION,
-      id: taskId,
-      data: {
-        status,
-        ...(opts.score !== undefined ? { score: opts.score } : {}),
-        ...(opts.notes !== undefined ? { notes: opts.notes } : {}),
-      },
-    })
-    revalidatePath('/admin-dashboard/tasks')
-    return { success: true }
-  } catch (e: unknown) {
-    console.error('Failed to update task status', e)
-    return { success: false, error: e instanceof Error ? e.message : 'Failed to update task' }
-  }
-}
-
-// List tasks (basic)
-export async function listTasks(): Promise<GeneratedTypes['collections']['tasks'] | unknown> {
-  try {
-    const payload = await getPayload({ config })
     const result = await payload.find({
-      collection: TASKS_COLLECTION,
-      limit: 100,
+      collection: 'tasks',
+      limit: 500,
       sort: '-createdAt',
-      depth: 1, // include related client & tutor docs
+      depth: 2, // Include relationships like client, tutor, topic
     })
+
+    console.log('Tasks found:', result.totalDocs)
     return result.docs
-  } catch (e) {
-    console.error('Failed to list tasks', e)
+  } catch (error) {
+    console.error('Error listing tasks:', error)
     return []
   }
 }
 
-// Fetch clients & tutors to populate selects
-export async function fetchClientsAndTutors(): Promise<{
-  clients: GeneratedTypes['collections']['clients'][]
-  tutors: GeneratedTypes['collections']['users'][]
-}> {
+export async function fetchClientsAndTutors() {
   try {
     const payload = await getPayload({ config })
-    const [clientsRes, tutorsRes] = await Promise.all([
+
+    const [clientsResult, tutorsResult] = await Promise.all([
       payload.find({
         collection: 'clients',
         limit: 500,
-        depth: 1, // Include user relationship
+        depth: 1,
       }),
       payload.find({
-        collection: 'users',
-        where: { role: { equals: 'TUTOR' } },
+        collection: 'tutors',
         limit: 500,
-        sort: 'fullName',
+        depth: 1,
       }),
     ])
+
     return {
-      clients: clientsRes.docs as GeneratedTypes['collections']['clients'][],
-      tutors: tutorsRes.docs as GeneratedTypes['collections']['users'][],
+      clients: clientsResult.docs,
+      tutors: tutorsResult.docs,
     }
-  } catch (e) {
-    console.error('Failed to fetch clients/tutors', e)
-    return { clients: [], tutors: [] }
+  } catch (error) {
+    console.error('Error fetching clients and tutors:', error)
+    return {
+      clients: [],
+      tutors: [],
+    }
   }
 }
 
-// Delete a task
+export async function createTask(formData: FormData): Promise<TaskDoc | null> {
+  try {
+    const payload = await getPayload({ config })
+
+    const name = formData.get('name') as string
+    const tutor = formData.get('tutor') as string
+    const client = formData.get('client') as string
+    const topic = formData.get('topic') as string
+    const status = formData.get('status') as string
+    const score = formData.get('score') as string
+
+    const result = await payload.create({
+      collection: 'tasks',
+      data: {
+        name,
+        tutor: Number(tutor),
+        client: Number(client),
+        topic: Number(topic),
+        status: (status as 'pending' | 'completed') || 'pending',
+        ...(score && { score: Number(score) }),
+      },
+    })
+
+    return result
+  } catch (error) {
+    console.error('Error creating task:', error)
+    return null
+  }
+}
+
+export async function updateTask(
+  id: number,
+  data: Partial<{
+    name: string
+    description: string
+    tutor: number
+    status: 'pending' | 'completed'
+    score: number
+    notes: string
+  }>,
+): Promise<TaskDoc | null> {
+  try {
+    const payload = await getPayload({ config })
+
+    // Convert notes to description if provided
+    const updateData = { ...data }
+    if (data.notes !== undefined) {
+      updateData.description = data.notes
+      delete updateData.notes
+    }
+
+    const result = await payload.update({
+      collection: 'tasks',
+      id,
+      data: updateData,
+    })
+
+    return result
+  } catch (error) {
+    console.error('Error updating task:', error)
+    return null
+  }
+}
+
 export async function deleteTask(id: number): Promise<boolean> {
   try {
     const payload = await getPayload({ config })
-    await payload.delete({ collection: TASKS_COLLECTION, id })
-    revalidatePath('/admin-dashboard/tasks')
+
+    await payload.delete({
+      collection: 'tasks',
+      id,
+    })
+
     return true
-  } catch (e) {
-    console.error('Failed to delete task', e)
+  } catch (error) {
+    console.error('Error deleting task:', error)
     return false
+  }
+}
+
+export async function assignTutorToTask(taskId: number, tutorId: number): Promise<boolean> {
+  try {
+    const updated = await updateTask(taskId, { tutor: tutorId })
+    return !!updated
+  } catch (error) {
+    console.error('Error assigning tutor to task:', error)
+    return false
+  }
+}
+
+export async function updateTaskStatus(
+  taskId: number,
+  status: 'In Progress' | 'Completed',
+  options?: { score?: number; notes?: string },
+): Promise<boolean> {
+  try {
+    // Convert the status to the database format
+    const dbStatus = status === 'Completed' ? 'completed' : 'pending'
+
+    const updateData: {
+      status: 'pending' | 'completed'
+      score?: number
+      notes?: string
+    } = { status: dbStatus }
+
+    if (options?.score !== undefined) {
+      updateData.score = options.score
+    }
+
+    if (options?.notes !== undefined) {
+      updateData.notes = options.notes
+    }
+
+    const updated = await updateTask(taskId, updateData)
+    return !!updated
+  } catch (error) {
+    console.error('Error updating task status:', error)
+    return false
+  }
+}
+
+export async function updateTaskScore(taskId: number, score: number): Promise<boolean> {
+  try {
+    const updated = await updateTask(taskId, { score })
+    return !!updated
+  } catch (error) {
+    console.error('Error updating task score:', error)
+    return false
+  }
+}
+
+export async function getTaskStats() {
+  try {
+    const payload = await getPayload({ config })
+
+    const [totalResult, pendingResult, completedResult] = await Promise.all([
+      payload.find({
+        collection: 'tasks',
+        limit: 0, // Just get count
+      }),
+      payload.find({
+        collection: 'tasks',
+        where: {
+          status: {
+            equals: 'pending',
+          },
+        },
+        limit: 0,
+      }),
+      payload.find({
+        collection: 'tasks',
+        where: {
+          status: {
+            equals: 'completed',
+          },
+        },
+        limit: 0,
+      }),
+    ])
+
+    return {
+      total: totalResult.totalDocs,
+      pending: pendingResult.totalDocs,
+      completed: completedResult.totalDocs,
+    }
+  } catch (error) {
+    console.error('Error getting task stats:', error)
+    return {
+      total: 0,
+      pending: 0,
+      completed: 0,
+    }
   }
 }

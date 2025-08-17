@@ -1,7 +1,18 @@
 'use client'
 
 // client dashboard component
-import { Bell, Calendar, CheckCircle, Clock, Users, AlertTriangle } from 'lucide-react'
+import {
+  Bell,
+  Calendar,
+  CheckCircle,
+  Clock,
+  Users,
+  AlertTriangle,
+  BookOpen,
+  TrendingUp,
+  Target,
+  Award,
+} from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -19,10 +30,19 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell }
 interface DashboardProps {
   stats: {
     totalClients: number
+    totalTutors: number
+    totalSubjects: number
     pendingTasks: number
     completedTasks: number
+    totalTasks: number
     dueThisWeek: number
     dueToday: number
+    overdueTasks: number
+    completedThisMonth: number
+    averageScore: number
+    newClientsThisMonth: number
+    newTasksThisWeek: number
+    completionRate: number
   }
   notifications: Array<{
     id: string
@@ -32,11 +52,12 @@ interface DashboardProps {
     time: string
   }>
   taskChart: Array<{ name: string; completed: number; pending: number }>
-  clientDistribution: Array<{ name: string; value: number; color: string }>
+  subjectDistribution: Array<{ name: string; value: number; color: string }>
   recentActivity: Array<{
     id: string
     color: string
     message: string
+    description?: string
     time: string
   }>
 }
@@ -50,7 +71,7 @@ export default function DashboardClient({
   stats,
   notifications,
   taskChart,
-  clientDistribution,
+  subjectDistribution,
   recentActivity,
 }: DashboardProps) {
   const unreadCount = notifications.length
@@ -96,6 +117,8 @@ export default function DashboardClient({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Main Stats Grid */}
       <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -104,9 +127,52 @@ export default function DashboardClient({
           </CardHeader>
           <CardContent>
             <div className="text-lg sm:text-2xl font-bold">{stats.totalClients}</div>
-            <p className="text-[10px] sm:text-xs text-muted-foreground">Active in system</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">
+              +{stats.newClientsThisMonth} this month
+            </p>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium">Active Tutors</CardTitle>
+            <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg sm:text-2xl font-bold">{stats.totalTutors}</div>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">
+              {stats.totalSubjects} subjects
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium">Task Completion</CardTitle>
+            <Target className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg sm:text-2xl font-bold">{stats.completionRate}%</div>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">
+              {stats.completedTasks}/{stats.totalTasks} completed
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium">Average Score</CardTitle>
+            <Award className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg sm:text-2xl font-bold">{stats.averageScore}%</div>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Completed tasks</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Secondary Stats Grid */}
+      <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium">Pending Tasks</CardTitle>
@@ -117,19 +183,21 @@ export default function DashboardClient({
             <p className="text-[10px] sm:text-xs text-muted-foreground">Awaiting completion</p>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Completed Tasks</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">Completed</CardTitle>
             <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-lg sm:text-2xl font-bold">{stats.completedTasks}</div>
-            <p className="text-[10px] sm:text-xs text-muted-foreground">All time</p>
+            <div className="text-lg sm:text-2xl font-bold">{stats.completedThisMonth}</div>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">This month</p>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Deadlines This Week</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">Due This Week</CardTitle>
             <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -137,6 +205,28 @@ export default function DashboardClient({
             <p className="text-[10px] sm:text-xs text-muted-foreground">
               {stats.dueToday} due today
             </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium">Overdue</CardTitle>
+            <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg sm:text-2xl font-bold text-red-600">{stats.overdueTasks}</div>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Needs attention</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium">New Tasks</CardTitle>
+            <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg sm:text-2xl font-bold">{stats.newTasksThisWeek}</div>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">This week</p>
           </CardContent>
         </Card>
       </div>
@@ -178,9 +268,9 @@ export default function DashboardClient({
         </Card>
         <Card className="overflow-hidden">
           <CardHeader>
-            <CardTitle className="text-sm sm:text-base">Client Distribution</CardTitle>
+            <CardTitle className="text-sm sm:text-base">Subject Distribution</CardTitle>
             <CardDescription className="text-xs sm:text-sm">
-              Active vs inactive clients
+              Task distribution by subjects
             </CardDescription>
           </CardHeader>
           <CardContent className="overflow-hidden">
@@ -192,7 +282,7 @@ export default function DashboardClient({
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={clientDistribution}
+                      data={subjectDistribution}
                       cx="50%"
                       cy="50%"
                       innerRadius={30}
@@ -200,7 +290,7 @@ export default function DashboardClient({
                       paddingAngle={2}
                       dataKey="value"
                     >
-                      {clientDistribution.map((entry, index) => (
+                      {subjectDistribution.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
@@ -210,7 +300,7 @@ export default function DashboardClient({
               </ChartContainer>
             </div>
             <div className="flex justify-center gap-2 sm:gap-4 mt-3 sm:mt-4 flex-wrap">
-              {clientDistribution.map((item) => (
+              {subjectDistribution.map((item) => (
                 <div key={item.name} className="flex items-center gap-1 sm:gap-2">
                   <div
                     className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full"
@@ -235,11 +325,14 @@ export default function DashboardClient({
         <CardContent>
           <div className="space-y-3 sm:space-y-4">
             {recentActivity.map((a) => (
-              <div key={a.id} className="flex items-center gap-3 sm:gap-4">
-                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${a.color}`} />
+              <div key={a.id} className="flex items-start gap-3 sm:gap-4">
+                <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-2 ${a.color}`} />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium">{a.message}</p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">{a.time}</p>
+                  {a.description && (
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">{a.description}</p>
+                  )}
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">{a.time}</p>
                 </div>
               </div>
             ))}
