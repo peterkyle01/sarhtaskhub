@@ -5,6 +5,8 @@ const Tasks: CollectionConfig = {
   auth: false,
   fields: [
     { name: 'name', type: 'text', required: true },
+    { name: 'description', type: 'textarea' },
+    { name: 'dueDate', type: 'date' },
     { name: 'tutor', type: 'relationship', relationTo: 'tutors', required: true },
     { name: 'client', type: 'relationship', relationTo: 'clients', required: true },
     { name: 'topic', type: 'relationship', relationTo: 'topics', required: true },
@@ -27,21 +29,21 @@ const Tasks: CollectionConfig = {
   ],
   access: {
     read: ({ req }) => {
-      if (!req.user) return false;
-      if (req.user.collection === 'superadmins') return true;
-      if (req.user.collection === 'admins') return true;
-      if (req.user.collection === 'tutors') return { tutor: { equals: req.user.id } };
-      return false;
+      if (!req.user) return false
+      if (req.user.collection === 'superadmins') return true
+      if (req.user.collection === 'admins') return true
+      if (req.user.collection === 'tutors') return { tutor: { equals: req.user.id } }
+      return false
     },
     create: ({ req }) => ['admins', 'superadmins'].includes(req.user?.collection || ''),
     update: ({ req }) => {
-      if (!req.user) return false;
-      if (['admins', 'superadmins'].includes(req.user.collection)) return true;
-      if (req.user.collection === 'tutors') return { tutor: { equals: req.user.id } };
-      return false;
+      if (!req.user) return false
+      if (['admins', 'superadmins'].includes(req.user.collection)) return true
+      if (req.user.collection === 'tutors') return { tutor: { equals: req.user.id } }
+      return false
     },
     delete: ({ req }) => req.user?.collection === 'superadmins',
   },
-};
+}
 
-export default Tasks;
+export default Tasks

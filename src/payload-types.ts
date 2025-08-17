@@ -319,6 +319,8 @@ export interface Topic {
 export interface Task {
   id: number;
   name: string;
+  description?: string | null;
+  dueDate?: string | null;
   tutor: number | Tutor;
   client: number | Client;
   topic: number | Topic;
@@ -539,6 +541,8 @@ export interface TopicsSelect<T extends boolean = true> {
  */
 export interface TasksSelect<T extends boolean = true> {
   name?: T;
+  description?: T;
+  dueDate?: T;
   tutor?: T;
   client?: T;
   topic?: T;

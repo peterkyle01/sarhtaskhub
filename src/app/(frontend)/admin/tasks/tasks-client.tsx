@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { createTask, updateTask, deleteTask, TaskDoc } from '@/server-actions/tasks-actions'
 import {
   AlertDialog,
@@ -80,6 +81,8 @@ export default function TasksClient({ initialTasks, initialClients, initialTutor
   const [editingTask, setEditingTask] = useState<TaskDoc | null>(null)
   const [newTaskData, setNewTaskData] = useState({
     name: '',
+    description: '',
+    dueDate: '',
     client: '',
     tutor: '',
     topic: '',
@@ -88,6 +91,8 @@ export default function TasksClient({ initialTasks, initialClients, initialTutor
   })
   const [editTaskData, setEditTaskData] = useState({
     name: '',
+    description: '',
+    dueDate: '',
     tutor: '',
     status: 'pending' as 'pending' | 'completed',
     score: '',
@@ -129,6 +134,8 @@ export default function TasksClient({ initialTasks, initialClients, initialTutor
       try {
         const formData = new FormData()
         formData.set('name', newTaskData.name)
+        if (newTaskData.description) formData.set('description', newTaskData.description)
+        if (newTaskData.dueDate) formData.set('dueDate', newTaskData.dueDate)
         formData.set('client', newTaskData.client)
         formData.set('tutor', newTaskData.tutor)
         if (newTaskData.topic) formData.set('topic', newTaskData.topic)
@@ -141,6 +148,8 @@ export default function TasksClient({ initialTasks, initialClients, initialTutor
           setIsAddModalOpen(false)
           setNewTaskData({
             name: '',
+            description: '',
+            dueDate: '',
             client: '',
             tutor: '',
             topic: '',
@@ -161,6 +170,8 @@ export default function TasksClient({ initialTasks, initialClients, initialTutor
       try {
         const updateData: {
           name: string
+          description?: string
+          dueDate?: string
           tutor: number
           status: 'pending' | 'completed'
           score?: number
@@ -169,16 +180,23 @@ export default function TasksClient({ initialTasks, initialClients, initialTutor
           tutor: Number(editTaskData.tutor),
           status: editTaskData.status,
         }
-        if (editTaskData.score) {
-          updateData.score = Number(editTaskData.score)
-        }
+        if (editTaskData.description) updateData.description = editTaskData.description
+        if (editTaskData.dueDate) updateData.dueDate = editTaskData.dueDate
+        if (editTaskData.score) updateData.score = Number(editTaskData.score)
 
         const updated = await updateTask(editingTask.id, updateData)
         if (updated) {
           setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
           setIsEditModalOpen(false)
           setEditingTask(null)
-          setEditTaskData({ name: '', tutor: '', status: 'pending', score: '' })
+          setEditTaskData({
+            name: '',
+            description: '',
+            dueDate: '',
+            tutor: '',
+            status: 'pending',
+            score: '',
+          })
         }
       } catch (e) {
         console.error('Failed to update task:', e)
@@ -190,6 +208,8 @@ export default function TasksClient({ initialTasks, initialClients, initialTutor
     setEditingTask(task)
     setEditTaskData({
       name: task.name,
+      description: task.description || '',
+      dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '',
       tutor:
         typeof task.tutor === 'object' && task.tutor ? String(task.tutor.id) : String(task.tutor),
       status: task.status as 'pending' | 'completed',
@@ -227,7 +247,7 @@ export default function TasksClient({ initialTasks, initialClients, initialTutor
                   Add Task
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[500px]">
+              <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Add New Task</DialogTitle>
                   <DialogDescription>Create a new task and assign it.</DialogDescription>
@@ -242,7 +262,28 @@ export default function TasksClient({ initialTasks, initialClients, initialTutor
                       placeholder="Enter task name"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      value={newTaskData.description}
+                      onChange={(e) =>
+                        setNewTaskData({ ...newTaskData, description: e.target.value })
+                      }
+                      placeholder="Enter task description"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="dueDate">Due Date</Label>
+                    <Input
+                      id="dueDate"
+                      type="date"
+                      value={newTaskData.dueDate}
+                      onChange={(e) => setNewTaskData({ ...newTaskData, dueDate: e.target.value })}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor="client">Client</Label>
                       <Select
@@ -280,7 +321,7 @@ export default function TasksClient({ initialTasks, initialClients, initialTutor
                       </Select>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor="status">Status</Label>
                       <Select
@@ -373,6 +414,8 @@ export default function TasksClient({ initialTasks, initialClients, initialTutor
                   <TableHeader>
                     <TableRow>
                       <TableHead>Task Name</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Due Date</TableHead>
                       <TableHead>Client</TableHead>
                       <TableHead>Tutor</TableHead>
                       <TableHead>Topic</TableHead>
@@ -402,6 +445,16 @@ export default function TasksClient({ initialTasks, initialClients, initialTutor
                         <TableRow key={task.id}>
                           <TableCell>
                             <div className="font-medium">{task.name}</div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm text-muted-foreground max-w-[200px] truncate">
+                              {task.description || '-'}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm">
+                              {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : '-'}
+                            </div>
                           </TableCell>
                           <TableCell>{clientName}</TableCell>
                           <TableCell>{tutorName}</TableCell>
@@ -520,7 +573,7 @@ export default function TasksClient({ initialTasks, initialClients, initialTutor
       </Card>
 
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Task</DialogTitle>
             <DialogDescription>Update task information.</DialogDescription>
@@ -533,6 +586,27 @@ export default function TasksClient({ initialTasks, initialClients, initialTutor
                 value={editTaskData.name}
                 onChange={(e) => setEditTaskData((prev) => ({ ...prev, name: e.target.value }))}
                 placeholder="Enter task name"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="editDescription">Description</Label>
+              <Textarea
+                id="editDescription"
+                value={editTaskData.description}
+                onChange={(e) =>
+                  setEditTaskData((prev) => ({ ...prev, description: e.target.value }))
+                }
+                placeholder="Enter task description"
+                rows={3}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="editDueDate">Due Date</Label>
+              <Input
+                id="editDueDate"
+                type="date"
+                value={editTaskData.dueDate}
+                onChange={(e) => setEditTaskData((prev) => ({ ...prev, dueDate: e.target.value }))}
               />
             </div>
             <div className="grid gap-2">
@@ -553,7 +627,7 @@ export default function TasksClient({ initialTasks, initialClients, initialTutor
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="editStatus">Status</Label>
                 <Select
