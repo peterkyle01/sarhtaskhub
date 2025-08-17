@@ -1,72 +1,30 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { Upload, CheckCircle, Clock, FileText, AlertCircle } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { CheckCircle, Clock, FileText, Edit, Save, X, Filter, Users } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 
 // Types
-import { listAssignedTasksForCurrentTutor } from '@/server-actions/tutors-actions'
-import { updateTaskStatus } from '@/server-actions/tasks-actions'
+import { listAssignedTasksForCurrentTutor, AssignedTask } from '@/server-actions/tutors-actions'
+import { updateTaskScore } from '@/server-actions/tasks-actions'
 
-interface AssignedTask {
-  id: number
-  clientName: string
-  courseName: string
-  taskType: string
-  platform: string
-  dueTime: string // ISO full datetime
-  dueDate: string // derived date part
-  status: 'Completed' | 'In Progress' | 'Pending'
-  priority: 'high' | 'medium' | 'low'
-  estimatedTime: string
-}
-
-const formSchema = z
-  .object({
-    taskId: z.string().min(1, { message: 'Please select a task.' }),
-    status: z.enum(['In Progress', 'Completed'], { message: 'Please select a status.' }),
-    notes: z.string().optional(),
-    score: z.string().optional(),
-    file: z.any().optional(), // FileList or File object
-  })
-  .superRefine((data, ctx) => {
-    if (data.status === 'Completed') {
-      if (!data.score || data.score.trim() === '') {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Score is required for completed tasks.',
-          path: ['score'],
-        })
-      } else {
-        const scoreNum = Number(data.score)
-        if (isNaN(scoreNum) || scoreNum < 0 || scoreNum > 100) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: 'Score must be a number between 0 and 100.',
-            path: ['score'],
-          })
-        }
-      }
-    }
-  })
-
-type SubmissionFormValues = z.infer<typeof formSchema>
+const scoreSchema = z.object({
+  score: z
+    .string()
+    .min(1, 'Score is required')
+    .refine((val) => {
+      const num = Number(val)
+      return !isNaN(num) && num >= 0 && num <= 100
+    }, 'Score must be between 0 and 100'),
+})
 
 function getStatusBadge(status: string) {
   const colors: Record<string, string> = {
@@ -88,68 +46,264 @@ function getStatusBadge(status: string) {
   )
 }
 
-function getPriorityBadge(priority: string) {
-  const colors: Record<string, string> = {
-    high: 'bg-red-100 text-red-700 dark:bg-red-400/20 dark:text-red-300 dark:ring-1 dark:ring-red-400/30',
-    medium:
-      'bg-amber-100 text-amber-700 dark:bg-amber-400/20 dark:text-amber-300 dark:ring-1 dark:ring-amber-400/30',
-    low: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-400/20 dark:text-emerald-300 dark:ring-1 dark:ring-emerald-400/30',
+function formatDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
+function TaskCard({
+  task,
+  onScoreUpdate,
+}: {
+  task: AssignedTask
+  onScoreUpdate: (id: number, score: number) => void
+}) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+    setValue,
+  } = useForm({
+    resolver: zodResolver(scoreSchema),
+    defaultValues: {
+      score: task.score?.toString() || '',
+    },
+  })
+
+  const onSubmit = async (data: { score: string }) => {
+    setIsUpdating(true)
+    try {
+      await onScoreUpdate(task.id, Number(data.score))
+      setIsEditing(false)
+    } catch (error) {
+      console.error('Failed to update score:', error)
+    } finally {
+      setIsUpdating(false)
+    }
   }
+
+  const handleEdit = () => {
+    setValue('score', task.score?.toString() || '')
+    setIsEditing(true)
+  }
+
+  const handleCancel = () => {
+    reset()
+    setIsEditing(false)
+  }
+
   return (
-    <Badge
-      className={`${
-        colors[priority] || 'bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-muted-foreground'
-      } text-xs rounded-full`}
-    >
-      {priority}
-    </Badge>
+    <Card className="group hover:shadow-md transition-all duration-200 rounded-lg border border-border/50 bg-gradient-to-br from-card to-card/80 backdrop-blur-sm">
+      <CardContent className="p-4">
+        {/* Compact Header with client name and badges */}
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className="font-bold text-base text-foreground truncate">{task.clientName}</h3>
+              <div className="flex items-center gap-1">{getStatusBadge(task.status)}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Compact Task Details Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+              <div>
+                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Course
+                </div>
+                <div className="font-medium text-sm text-foreground">{task.courseName}</div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
+              <div>
+                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Task Type
+                </div>
+                <div className="font-medium text-sm text-foreground">{task.taskType}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>
+              <div>
+                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Due Date
+                </div>
+                <div className="font-medium text-sm text-foreground">
+                  {formatDate(task.dueDate)}
+                </div>
+              </div>
+            </div>
+
+            {task.description && (
+              <div className="flex items-start gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1"></div>
+                <div>
+                  <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Description
+                  </div>
+                  <div className="text-xs text-foreground/80 leading-relaxed">
+                    {task.description}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Compact Score Section */}
+        <div className="border-t border-border/50 pt-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Score
+              </span>
+            </div>
+
+            {isEditing ? (
+              <form onSubmit={handleSubmit(onSubmit)} className="flex items-center gap-2">
+                <div className="relative">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    placeholder="0-100"
+                    className={cn(
+                      'w-20 h-8 text-center text-sm font-bold bg-background/50 border-2 rounded-lg transition-all duration-200 focus:scale-105',
+                      errors.score
+                        ? 'border-red-500 focus:border-red-600'
+                        : 'border-border focus:border-primary',
+                    )}
+                    {...register('score')}
+                  />
+                  <div className="absolute -top-5 left-1/2 transform -translate-x-1/2">
+                    {errors.score && (
+                      <span className="text-xs text-red-500 bg-background px-1 py-0.5 rounded-md shadow-sm">
+                        {errors.score.message}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex gap-1">
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={isUpdating}
+                    className="h-8 px-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-all duration-200 hover:scale-105 disabled:scale-100 text-xs"
+                  >
+                    {isUpdating ? (
+                      <>
+                        <Clock className="h-3 w-3 mr-1 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-3 w-3 mr-1" />
+                        Save
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCancel}
+                    className="h-8 px-3 border-2 rounded-lg transition-all duration-200 hover:scale-105 text-xs"
+                  >
+                    <X className="h-3 w-3 mr-1" />
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              <div className="flex items-center gap-2">
+                <div className="text-right">
+                  <div className="text-lg font-bold text-foreground">
+                    {task.score !== null ? (
+                      <span
+                        className={cn(
+                          'inline-flex items-center gap-1 px-3 py-1 rounded-lg text-sm',
+                          task.score >= 90
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                            : task.score >= 70
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                              : task.score >= 50
+                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+                                : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+                        )}
+                      >
+                        {task.score}%
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground px-3 py-1 rounded-lg bg-muted/50 text-sm">
+                        No score
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleEdit}
+                  className="h-8 px-3 border-2 border-dashed border-border hover:border-primary rounded-lg transition-all duration-200 hover:scale-105 group text-xs"
+                >
+                  <Edit className="h-3 w-3 mr-1 group-hover:rotate-12 transition-transform duration-200" />
+                  Edit Score
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
-function getDaysUntilDue(dueDate: string) {
-  const due = new Date(dueDate)
-  const today = new Date()
-  const diffTime = due.getTime() - today.getTime()
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+export default function TutorTasksPage() {
+  const searchParams = useSearchParams()
+  const clientFilter = searchParams.get('client')
 
-  if (diffDays < 0)
-    return { text: `${Math.abs(diffDays)} days overdue`, color: 'text-red-600 dark:text-red-400' }
-  if (diffDays === 0) return { text: 'Due today', color: 'text-orange-600 dark:text-orange-400' }
-  if (diffDays === 1) return { text: 'Due tomorrow', color: 'text-orange-600 dark:text-orange-400' }
-  return { text: `${diffDays} days left`, color: 'text-muted-foreground' }
-}
-
-export default function SubmitTaskPage() {
-  const [submissionSuccess, setSubmissionSuccess] = useState(false)
-  const [selectedTaskDetails, setSelectedTaskDetails] = useState<AssignedTask | null>(null)
   const [tasks, setTasks] = useState<AssignedTask[]>([])
   const [loadingTasks, setLoadingTasks] = useState(true)
+  const [updateSuccess, setUpdateSuccess] = useState(false)
+  const [authError, setAuthError] = useState(false)
+  const [selectedClient, setSelectedClient] = useState<string | null>(clientFilter)
 
   useEffect(() => {
     let active = true
     async function load() {
       try {
         const data = await listAssignedTasksForCurrentTutor()
-        type RawTask = {
-          id: number
-          clientName: string
-          courseName: string
-          taskType: string
-          platform: string
-          dueTime: string
-          status: 'Completed' | 'In Progress' | 'Pending'
-          priority: 'high' | 'medium' | 'low'
-          estimatedTime: string
-        }
         if (active) {
-          const mapped = (data as RawTask[]).map((d) => ({
-            ...d,
-            dueDate: d.dueTime ? d.dueTime.split('T')[0] : '',
-          }))
-          setTasks(mapped)
+          setTasks(data)
+          setAuthError(false)
         }
       } catch (e) {
         console.error('Failed to load assigned tasks', e)
+        if (active) {
+          if (
+            e instanceof Error &&
+            (e.message === 'AUTHENTICATION_REQUIRED' || e.message === 'TUTOR_ACCESS_REQUIRED')
+          ) {
+            setAuthError(true)
+          }
+        }
       } finally {
         if (active) setLoadingTasks(false)
       }
@@ -160,359 +314,278 @@ export default function SubmitTaskPage() {
     }
   }, [])
 
-  const form = useForm<SubmissionFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      taskId: '',
-      status: 'In Progress',
-      notes: '',
-      score: '',
-      file: undefined,
-    },
-  })
-
-  const {
-    register,
-    handleSubmit,
-    watch,
-    setValue,
-    formState: { errors, isSubmitting },
-    reset,
-  } = form
-  const selectedStatus = watch('status')
-  const selectedTaskId = watch('taskId')
-
-  // Update task details when task is selected
-  const handleTaskSelect = (taskId: string) => {
-    setValue('taskId', taskId)
-    const task = tasks.find((t) => String(t.id) === taskId || t.id === Number(taskId))
-    setSelectedTaskDetails(task || null)
-  }
-
-  const onSubmit = async (data: SubmissionFormValues) => {
-    const taskIdNum = Number(data.taskId)
-    if (!taskIdNum) return
+  const handleScoreUpdate = async (taskId: number, score: number) => {
     try {
-      await updateTaskStatus(taskIdNum, data.status, {
-        score: data.score ? Number(data.score) : undefined,
-        notes: data.notes || undefined,
-      })
-      setSubmissionSuccess(true)
-      // Refresh tasks list
-      const refreshed = await listAssignedTasksForCurrentTutor()
-      type RawTask = {
-        id: number
-        clientName: string
-        courseName: string
-        taskType: string
-        platform: string
-        dueTime: string
-        status: 'Completed' | 'In Progress' | 'Pending'
-        priority: 'high' | 'medium' | 'low'
-        estimatedTime: string
+      const success = await updateTaskScore(taskId, score)
+      if (success) {
+        // Update the task in the local state
+        setTasks((prevTasks) =>
+          prevTasks.map((task) => (task.id === taskId ? { ...task, score } : task)),
+        )
+        setUpdateSuccess(true)
+        setTimeout(() => setUpdateSuccess(false), 3000)
       }
-      const mapped = (refreshed as RawTask[]).map((d) => ({
-        ...d,
-        dueDate: d.dueTime ? d.dueTime.split('T')[0] : '',
-      }))
-      setTasks(mapped)
-      reset()
-      setSelectedTaskDetails(null)
-      setTimeout(() => setSubmissionSuccess(false), 5000)
-    } catch (e) {
-      console.error('Failed to submit task update', e)
+    } catch (error) {
+      console.error('Failed to update score:', error)
     }
   }
 
+  // Filter tasks by client if specified
+  const filteredTasks = selectedClient
+    ? tasks.filter((task) => task.clientName === selectedClient)
+    : tasks
+
+  // Group tasks by course (subject) and then by task type (topic)
+  const groupedTasks = filteredTasks.reduce(
+    (acc, task) => {
+      const courseKey = task.courseName
+      const taskTypeKey = task.taskType
+
+      if (!acc[courseKey]) {
+        acc[courseKey] = {}
+      }
+      if (!acc[courseKey][taskTypeKey]) {
+        acc[courseKey][taskTypeKey] = []
+      }
+      acc[courseKey][taskTypeKey].push(task)
+
+      return acc
+    },
+    {} as Record<string, Record<string, AssignedTask[]>>,
+  )
+
   return (
-    <div className="flex-1 space-y-4 sm:space-y-6">
-      {/* Header */}
-      <Card className="bg-[var(--primary)] text-[var(--primary-foreground)] border-0 rounded-xl sm:rounded-2xl shadow">
-        <CardContent className="p-4 sm:p-6 flex flex-col gap-3 sm:gap-4">
-          <div>
-            <h2 className="text-lg sm:text-2xl font-bold mb-1">Submit Task 📝</h2>
-            <p className="opacity-80 text-sm sm:text-base">
-              Update task status and submit your completed work
-            </p>
+    <div className="flex-1 space-y-6">
+      {/* Compact Header */}
+      <Card className="bg-gradient-to-br from-primary via-primary to-primary/90 text-primary-foreground border-0 rounded-xl shadow-lg overflow-hidden relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
+        <CardContent className="relative p-4 flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold mb-1 flex items-center gap-2">
+                <span>My Tasks</span>
+                <span className="text-lg">📋</span>
+              </h2>
+              <p className="opacity-90 text-sm">View and manage scores for your assigned tasks</p>
+            </div>
+            <div className="hidden md:block">
+              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                <FileText className="h-6 w-6" />
+              </div>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm">
-            <span className="flex items-center gap-1 opacity-90">
-              <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              {tasks.length} Assigned Tasks
-            </span>
-            <span className="flex items-center gap-1 opacity-90">
-              <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              {tasks.filter((t) => t.status === 'In Progress').length} In Progress
-            </span>
-            <span className="flex items-center gap-1 opacity-90">
-              <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              {tasks.filter((t) => t.status === 'Completed').length} Completed
-            </span>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 flex items-center gap-2">
+              <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                <FileText className="h-4 w-4" />
+              </div>
+              <div>
+                <div className="text-lg font-bold">{filteredTasks.length}</div>
+                <div className="text-xs opacity-80">
+                  {selectedClient ? 'Client Tasks' : 'Total Tasks'}
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 flex items-center gap-2">
+              <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                <Clock className="h-4 w-4" />
+              </div>
+              <div>
+                <div className="text-lg font-bold">
+                  {filteredTasks.filter((t) => t.status === 'In Progress').length}
+                </div>
+                <div className="text-xs opacity-80">In Progress</div>
+              </div>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 flex items-center gap-2">
+              <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                <CheckCircle className="h-4 w-4" />
+              </div>
+              <div>
+                <div className="text-lg font-bold">
+                  {filteredTasks.filter((t) => t.status === 'Completed').length}
+                </div>
+                <div className="text-xs opacity-80">Completed</div>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3 min-w-0">
-        {/* Task Submission Form */}
-        <Card className="lg:col-span-2 rounded-xl sm:rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)]">
-          <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="text-base sm:text-xl text-foreground">
-              Task Submission Form
-            </CardTitle>
-            <CardDescription className="text-xs sm:text-sm">
-              Update task status and submit your completed work.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0">
-            {submissionSuccess && (
-              <div className="bg-green-100 text-green-800 dark:bg-green-400/15 dark:text-green-300 p-3 rounded-lg mb-4 text-center text-sm border border-green-200 dark:border-green-400/30">
-                <CheckCircle className="h-4 w-4 inline mr-2" />
-                Task submitted successfully!
-              </div>
-            )}
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
-              {/* Task Selector */}
-              <div className="grid gap-2">
-                <Label htmlFor="taskId" className="text-sm font-medium">
-                  Select Task
-                </Label>
-                <Select onValueChange={handleTaskSelect} value={selectedTaskId}>
-                  <SelectTrigger
-                    className={cn(
-                      'rounded-xl border-gray-200 dark:border-white/10',
-                      errors.taskId && 'border-red-500 dark:border-red-400',
-                    )}
-                  >
-                    <SelectValue placeholder="Choose a task to update" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {loadingTasks && (
-                      <SelectItem value="__loading" disabled>
-                        Loading...
-                      </SelectItem>
-                    )}
-                    {!loadingTasks &&
-                      tasks.map((task) => (
-                        <SelectItem key={task.id} value={String(task.id)}>
-                          {task.id} - {task.clientName} ({task.courseName})
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-                {errors.taskId && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {typeof errors.taskId.message === 'string'
-                      ? errors.taskId.message
-                      : 'Please select a task'}
-                  </p>
-                )}
-              </div>
-
-              {/* Status Selector */}
-              <div className="grid gap-2">
-                <Label htmlFor="status" className="text-sm font-medium">
-                  Task Status
-                </Label>
-                <Select
-                  onValueChange={(value) =>
-                    setValue('status', value as 'In Progress' | 'Completed')
-                  }
-                  value={selectedStatus}
-                >
-                  <SelectTrigger
-                    className={cn(
-                      'rounded-xl border-gray-200 dark:border-white/10',
-                      errors.status && 'border-red-500 dark:border-red-400',
-                    )}
-                  >
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="In Progress">In Progress</SelectItem>
-                    <SelectItem value="Completed">Completed</SelectItem>
-                  </SelectContent>
-                </Select>
-                {errors.status && (
-                  <p className="text-red-500 text-xs mt-1">{errors.status.message}</p>
-                )}
-              </div>
-
-              {/* Score Input (only if completed) */}
-              {selectedStatus === 'Completed' && (
-                <div className="grid gap-2">
-                  <Label htmlFor="score" className="text-sm font-medium">
-                    Score (%)
-                  </Label>
-                  <Input
-                    id="score"
-                    type="number"
-                    min="0"
-                    max="100"
-                    placeholder="Enter score (0-100)"
-                    className={cn(
-                      'rounded-xl border-gray-200 dark:border-white/10',
-                      errors.score && 'border-red-500 dark:border-red-400',
-                    )}
-                    {...register('score')}
-                  />
-                  {errors.score && (
-                    <p className="text-red-500 text-xs mt-1">{errors.score.message}</p>
-                  )}
+      {/* Compact Client Filter */}
+      {selectedClient && (
+        <Card className="rounded-lg shadow-md border-0 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/50 rounded-lg flex items-center justify-center">
+                  <Filter className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 </div>
-              )}
-
-              {/* Notes */}
-              <div className="grid gap-2">
-                <Label htmlFor="notes" className="text-sm font-medium">
-                  Notes (Optional)
-                </Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Add any notes or comments about your progress..."
-                  className="rounded-xl border-gray-200 dark:border-white/10 min-h-[100px]"
-                  {...register('notes')}
-                />
-              </div>
-
-              {/* File Upload */}
-              <div className="grid gap-2">
-                <Label htmlFor="file" className="text-sm font-medium">
-                  Attach File (Optional)
-                </Label>
-                <div className="border-2 border-dashed border-gray-200 dark:border-white/10 rounded-xl p-4 text-center hover:border-gray-300 dark:hover:border-white/20 transition-colors">
-                  <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400 dark:text-white/40" />
-                  <Input
-                    id="file"
-                    type="file"
-                    className="hidden"
-                    accept=".pdf,.doc,.docx,.txt,.jpg,.png"
-                    {...register('file')}
-                  />
-                  <Label
-                    htmlFor="file"
-                    className="cursor-pointer text-sm text-muted-foreground hover:text-foreground"
-                  >
-                    Click to upload or drag and drop
-                    <br />
-                    <span className="text-xs text-muted-foreground/70">
-                      PDF, DOC, TXT, JPG, PNG (max 10MB)
-                    </span>
-                  </Label>
+                <div>
+                  <div className="font-medium text-sm text-blue-800 dark:text-blue-300">
+                    Filtered by Client: {selectedClient}
+                  </div>
+                  <div className="text-xs text-blue-600 dark:text-blue-400">
+                    Showing {filteredTasks.length} tasks for this client
+                  </div>
                 </div>
               </div>
-
-              {/* Submit Button */}
               <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedClient(null)}
+                className="h-8 text-xs border-blue-300 text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-900/30"
               >
-                {isSubmitting ? (
-                  <>
-                    <Clock className="h-4 w-4 mr-2 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Submit Task
-                  </>
-                )}
+                Clear Filter
               </Button>
-            </form>
+            </div>
           </CardContent>
         </Card>
+      )}
 
-        {/* Task Details & Quick Actions */}
-        <div className="space-y-4 sm:space-y-6 min-w-0">
-          {/* Selected Task Details */}
-          {selectedTaskDetails && (
-            <Card className="rounded-xl sm:rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)]">
-              <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="text-sm sm:text-lg text-foreground">Task Details</CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 sm:p-6 pt-0 space-y-3 sm:space-y-4">
+      {/* Authentication Error */}
+      {authError && (
+        <Card className="border-red-200 dark:border-red-800 bg-gradient-to-r from-red-50 to-red-100/50 dark:from-red-950/50 dark:to-red-900/30">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-red-100 dark:bg-red-900/50 rounded-full flex items-center justify-center">
+                <CheckCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <h3 className="font-bold text-red-800 dark:text-red-300 text-lg">
+                  Authentication Required
+                </h3>
+                <p className="text-red-700 dark:text-red-400">
+                  You need to log in as a tutor to view your assigned tasks.
+                </p>
+              </div>
+            </div>
+            <div className="text-center">
+              <Button
+                onClick={() => window.open('/superadmin', '_blank')}
+                className="bg-red-600 hover:bg-red-700 text-white font-medium px-6 py-2 rounded-lg transition-all duration-200 hover:scale-105"
+              >
+                Go to Admin Login
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Success Message */}
+      {updateSuccess && (
+        <Card className="border-green-200 dark:border-green-800 bg-gradient-to-r from-green-50 to-green-100/50 dark:from-green-950/50 dark:to-green-900/30">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-center gap-3">
+              <div className="w-8 h-8 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center">
+                <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+              </div>
+              <span className="font-medium text-green-800 dark:text-green-300">
+                Score updated successfully!
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tasks List */}
+      <div className="space-y-4">
+        {loadingTasks ? (
+          <Card className="rounded-lg shadow-md border-0 bg-gradient-to-br from-card to-card/80">
+            <CardContent className="p-6 text-center">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                  <Clock className="h-6 w-6 animate-spin text-primary" />
+                </div>
                 <div>
-                  <h4 className="font-medium text-sm sm:text-base text-foreground mb-2">
-                    {selectedTaskDetails.clientName}
-                  </h4>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    {selectedTaskDetails.courseName} - {selectedTaskDetails.taskType}
+                  <h3 className="font-semibold text-base text-foreground mb-1">
+                    Loading your tasks...
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Please wait while we fetch your assignments
                   </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {getStatusBadge(selectedTaskDetails.status)}
-                  {getPriorityBadge(selectedTaskDetails.priority)}
-                </div>
-
-                <div className="flex items-center justify-between text-xs sm:text-sm">
-                  <span className="text-muted-foreground">Due Date:</span>
-                  <span
-                    className={`font-medium ${getDaysUntilDue(selectedTaskDetails.dueDate).color}`}
-                  >
-                    {new Date(selectedTaskDetails.dueDate).toLocaleDateString()}
-                  </span>
-                </div>
-
-                <div className="text-center">
-                  <span
-                    className={`text-xs sm:text-sm font-medium ${getDaysUntilDue(selectedTaskDetails.dueDate).color}`}
-                  >
-                    {getDaysUntilDue(selectedTaskDetails.dueDate).text}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Quick Stats */}
-          <Card className="rounded-xl sm:rounded-2xl shadow-sm border border-[var(--border)] bg-[var(--card)]">
-            <CardHeader className="p-4 sm:p-6">
-              <CardTitle className="text-sm sm:text-lg text-foreground">Quick Stats</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0 space-y-3 sm:space-y-4">
-              <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                <div className="text-center p-3 bg-blue-50 dark:bg-blue-400/10 rounded-lg">
-                  <div className="text-lg sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
-                    {tasks.filter((t) => t.status === 'In Progress').length}
-                  </div>
-                  <div className="text-[10px] sm:text-xs text-blue-600 dark:text-blue-300">
-                    In Progress
-                  </div>
-                </div>
-                <div className="text-center p-3 bg-yellow-50 dark:bg-amber-400/10 rounded-lg">
-                  <div className="text-lg sm:text-2xl font-bold text-yellow-600 dark:text-amber-300">
-                    {tasks.filter((t) => t.status === 'Pending').length}
-                  </div>
-                  <div className="text-[10px] sm:text-xs text-yellow-600 dark:text-amber-300">
-                    Pending
-                  </div>
                 </div>
               </div>
-
-              {/* Urgent Tasks Alert */}
-              {tasks.some(
-                (task) =>
-                  getDaysUntilDue(task.dueDate).text.includes('overdue') ||
-                  getDaysUntilDue(task.dueDate).text.includes('today'),
-              ) && (
-                <div className="p-3 bg-red-50 dark:bg-red-400/10 border border-red-200 dark:border-red-400/30 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
-                    <span className="text-sm font-medium text-red-800 dark:text-red-300">
-                      Urgent Tasks
-                    </span>
-                  </div>
-                  <p className="text-xs text-red-700 dark:text-red-300/90">
-                    You have tasks that are due today or overdue. Please prioritize these
-                    submissions.
-                  </p>
-                </div>
-              )}
             </CardContent>
           </Card>
-        </div>
+        ) : filteredTasks.length === 0 ? (
+          <Card className="rounded-lg shadow-md border-0 bg-gradient-to-br from-card to-card/80">
+            <CardContent className="p-6 text-center">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center">
+                  <FileText className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg text-foreground mb-1">
+                    {selectedClient
+                      ? `No tasks found for ${selectedClient}`
+                      : 'No tasks assigned yet'}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedClient
+                      ? 'This client has no tasks assigned to you currently.'
+                      : 'You&apos;ll see your assignments here once they&apos;re created'}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {Object.entries(groupedTasks).map(([courseName, courseGroups]) => (
+              <Card
+                key={courseName}
+                className="rounded-lg shadow-md border-0 bg-gradient-to-br from-card to-card/80"
+              >
+                <CardContent className="p-4">
+                  {/* Compact Course Header */}
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                      <FileText className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-foreground">{courseName}</h2>
+                      <p className="text-xs text-muted-foreground">
+                        {Object.values(courseGroups).flat().length} tasks in{' '}
+                        {Object.keys(courseGroups).length} categories
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Compact Task Types */}
+                  <div className="space-y-4">
+                    {Object.entries(courseGroups).map(([taskType, tasksInType]) => (
+                      <div key={taskType}>
+                        {/* Compact Task Type Header */}
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-6 h-6 bg-secondary/20 rounded-lg flex items-center justify-center">
+                            <Users className="h-3 w-3 text-secondary-foreground" />
+                          </div>
+                          <div>
+                            <h3 className="text-base font-semibold text-foreground">{taskType}</h3>
+                            <p className="text-xs text-muted-foreground">
+                              {tasksInType.length} tasks
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Tasks in this type */}
+                        <div className="grid gap-3">
+                          {tasksInType.map((task) => (
+                            <TaskCard key={task.id} task={task} onScoreUpdate={handleScoreUpdate} />
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

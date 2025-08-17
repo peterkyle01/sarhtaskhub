@@ -1,11 +1,25 @@
 import React from 'react'
+import { redirect } from 'next/navigation'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
-import { getCurrentUser } from '@/server-actions/auth-actions'
+import { requireAdmin } from '@/server-actions/auth-actions'
 import { AdminSidebar } from './admin-sidebar'
 import { AutoCollapseWrapper } from './auto-collapse-wrapper'
 
 export default async function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
-  const user = await getCurrentUser()
+  let user
+
+  try {
+    user = await requireAdmin()
+  } catch (error) {
+    // Redirect to login if not authenticated or not an admin
+    if (error instanceof Error && error.message === 'AUTHENTICATION_REQUIRED') {
+      redirect('/')
+    } else if (error instanceof Error && error.message === 'ADMIN_ACCESS_REQUIRED') {
+      redirect('/tutor') // Redirect tutors to their own dashboard
+    }
+    redirect('/') // Fallback redirect
+  }
+
   return (
     <SidebarProvider>
       <AutoCollapseWrapper>

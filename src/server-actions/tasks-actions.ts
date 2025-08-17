@@ -89,18 +89,27 @@ export async function updateTask(
   id: number,
   data: Partial<{
     name: string
+    description: string
     tutor: number
     status: 'pending' | 'completed'
     score: number
+    notes: string
   }>,
 ): Promise<TaskDoc | null> {
   try {
     const payload = await getPayload({ config })
 
+    // Convert notes to description if provided
+    const updateData = { ...data }
+    if (data.notes !== undefined) {
+      updateData.description = data.notes
+      delete updateData.notes
+    }
+
     const result = await payload.update({
       collection: 'tasks',
       id,
-      data,
+      data: updateData,
     })
 
     return result
@@ -138,19 +147,41 @@ export async function assignTutorToTask(taskId: number, tutorId: number): Promis
 
 export async function updateTaskStatus(
   taskId: number,
-  status: 'pending' | 'completed',
-  options?: { score?: number },
+  status: 'In Progress' | 'Completed',
+  options?: { score?: number; notes?: string },
 ): Promise<boolean> {
   try {
-    const updateData: { status: 'pending' | 'completed'; score?: number } = { status }
+    // Convert the status to the database format
+    const dbStatus = status === 'Completed' ? 'completed' : 'pending'
+
+    const updateData: {
+      status: 'pending' | 'completed'
+      score?: number
+      notes?: string
+    } = { status: dbStatus }
+
     if (options?.score !== undefined) {
       updateData.score = options.score
+    }
+
+    if (options?.notes !== undefined) {
+      updateData.notes = options.notes
     }
 
     const updated = await updateTask(taskId, updateData)
     return !!updated
   } catch (error) {
     console.error('Error updating task status:', error)
+    return false
+  }
+}
+
+export async function updateTaskScore(taskId: number, score: number): Promise<boolean> {
+  try {
+    const updated = await updateTask(taskId, { score })
+    return !!updated
+  } catch (error) {
+    console.error('Error updating task score:', error)
     return false
   }
 }

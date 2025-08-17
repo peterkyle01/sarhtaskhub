@@ -1,7 +1,8 @@
 import React from 'react'
+import { redirect } from 'next/navigation'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { AutoCollapseWrapper } from './auto-collapse-wrapper'
-import { getCurrentUser } from '@/server-actions/auth-actions'
+import { requireTutor } from '@/server-actions/auth-actions'
 import { TutorSidebar } from './tutor-sidebar'
 
 export const dynamic = 'force-dynamic'
@@ -15,7 +16,20 @@ export const fetchCache = 'force-no-store'
 // so we just alias it.
 
 export default async function TutorDashboardLayout({ children }: { children: React.ReactNode }) {
-  const user = await getCurrentUser()
+  let user
+
+  try {
+    user = await requireTutor()
+  } catch (error) {
+    // Redirect to login if not authenticated or not a tutor
+    if (error instanceof Error && error.message === 'AUTHENTICATION_REQUIRED') {
+      redirect('/')
+    } else if (error instanceof Error && error.message === 'TUTOR_ACCESS_REQUIRED') {
+      redirect('/admin') // Redirect admins to their own dashboard
+    }
+    redirect('/') // Fallback redirect
+  }
+
   return (
     <SidebarProvider>
       <AutoCollapseWrapper>

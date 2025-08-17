@@ -125,7 +125,7 @@ export function AdminSidebar({ user }: { user: AppUser | null }) {
               <span className="font-mono font-medium">v1.0.0</span>
               <div className="flex items-center gap-1">
                 <div className="h-1 w-1 sm:h-1.5 sm:w-1.5 rounded-full bg-green-500"></div>
-                <span className="uppercase tracking-wide font-semibold">Online</span>
+                <span className="uppercase tracking-wide font-semibold">Active</span>
               </div>
             </div>
           </div>

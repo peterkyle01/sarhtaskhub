@@ -27,9 +27,9 @@ import { AppBrand } from '@/components/custom/app-brand'
 type AppUser = Config['user']
 
 const navigationItems = [
-  { title: 'Dashboard', url: '/tutors-dashboard', icon: Home },
-  { title: 'Assigned Clients', url: '/tutors-dashboard/assigned-clients', icon: Users },
-  { title: 'Submit Task', url: '/tutors-dashboard/submit-task', icon: Upload },
+  { title: 'Dashboard', url: '/tutor', icon: Home },
+  { title: 'Clients', url: '/tutor/clients', icon: Users },
+  { title: 'Tasks', url: '/tutor/tasks', icon: Upload },
 ]
 
 export function TutorSidebar({ user }: { user: AppUser | null }) {
@@ -123,7 +123,7 @@ export function TutorSidebar({ user }: { user: AppUser | null }) {
               <span className="font-mono font-medium">v1.0.0</span>
               <div className="flex items-center gap-1">
                 <div className="h-1 w-1 sm:h-1.5 sm:w-1.5 rounded-full bg-green-500"></div>
-                <span className="uppercase tracking-wide font-semibold">Online</span>
+                <span className="uppercase tracking-wide font-semibold">Active</span>
               </div>
             </div>
           </div>
