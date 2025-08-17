@@ -5,7 +5,7 @@ import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
-//import { migrations } from './migrations'
+import { migrations } from './migrations'
 import { Media } from './collections/Media'
 import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
 import Superadmins from './collections/SuperAdmins'
@@ -39,7 +39,7 @@ export default buildConfig({
     pool: {
       connectionString: process.env.DATABASE_URI || '',
     },
-    //prodMigrations: migrations,
+    prodMigrations: migrations,
   }),
   sharp,
   plugins: [
