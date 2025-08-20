@@ -44,12 +44,13 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '@/components/ui/alert-dialog'
-import { Client, Tutor } from '@/payload-types'
+import { Client, Tutor, Topic } from '@/payload-types'
 
 interface Props {
   initialTasks: TaskDoc[]
   initialClients: Client[]
   initialTutors: Tutor[]
+  initialTopics: Topic[]
 }
 
 function getStatusBadge(status: string) {
@@ -71,7 +72,12 @@ function getStatusBadge(status: string) {
   }
 }
 
-export default function TasksClient({ initialTasks, initialClients, initialTutors }: Props) {
+export default function TasksClient({
+  initialTasks,
+  initialClients,
+  initialTutors,
+  initialTopics,
+}: Props) {
   const [tasks, setTasks] = useState<TaskDoc[]>(initialTasks)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -128,7 +134,8 @@ export default function TasksClient({ initialTasks, initialClients, initialTutor
   const paginatedTasks = filteredTasks.slice(startIndex, startIndex + itemsPerPage)
 
   function handleAddTask() {
-    if (!newTaskData.name.trim() || !newTaskData.client || !newTaskData.tutor) return
+    if (!newTaskData.name.trim() || !newTaskData.client || !newTaskData.tutor || !newTaskData.topic)
+      return
 
     startTransition(async () => {
       try {
@@ -138,7 +145,7 @@ export default function TasksClient({ initialTasks, initialClients, initialTutor
         if (newTaskData.dueDate) formData.set('dueDate', newTaskData.dueDate)
         formData.set('client', newTaskData.client)
         formData.set('tutor', newTaskData.tutor)
-        if (newTaskData.topic) formData.set('topic', newTaskData.topic)
+        formData.set('topic', newTaskData.topic)
         formData.set('status', newTaskData.status)
         if (newTaskData.score) formData.set('score', newTaskData.score)
 
@@ -321,6 +328,24 @@ export default function TasksClient({ initialTasks, initialClients, initialTutor
                       </Select>
                     </div>
                   </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="topic">Topic</Label>
+                    <Select
+                      value={newTaskData.topic}
+                      onValueChange={(value) => setNewTaskData({ ...newTaskData, topic: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select topic" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {initialTopics.map((topic) => (
+                          <SelectItem key={topic.id} value={String(topic.id)}>
+                            {topic.name || `Topic ${topic.id}`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor="status">Status</Label>
@@ -367,7 +392,8 @@ export default function TasksClient({ initialTasks, initialClients, initialTutor
                       isPending ||
                       !newTaskData.name.trim() ||
                       !newTaskData.client ||
-                      !newTaskData.tutor
+                      !newTaskData.tutor ||
+                      !newTaskData.topic
                     }
                   >
                     {isPending ? 'Creating...' : 'Add Task'}

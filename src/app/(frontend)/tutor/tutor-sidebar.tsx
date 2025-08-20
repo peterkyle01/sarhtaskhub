@@ -16,7 +16,7 @@ import {
   SidebarRail,
   useSidebar,
 } from '@/components/ui/sidebar'
-import { Home, Users, Upload } from 'lucide-react'
+import { Home, Users, Upload, User } from 'lucide-react'
 import Link from 'next/link'
 import { LogoutButton } from '@/components/custom/logout-button'
 import { displayRole } from '@/lib/user-utils'
@@ -30,6 +30,7 @@ const navigationItems = [
   { title: 'Dashboard', url: '/tutor', icon: Home },
   { title: 'Clients', url: '/tutor/clients', icon: Users },
   { title: 'Tasks', url: '/tutor/tasks', icon: Upload },
+  { title: 'Profile', url: '/tutor/profile', icon: User },
 ]
 
 export function TutorSidebar({ user }: { user: AppUser | null }) {

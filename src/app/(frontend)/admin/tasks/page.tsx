@@ -1,13 +1,17 @@
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 export const fetchCache = 'force-no-store'
-import { listTasks, fetchClientsAndTutors, getTaskStats } from '@/server-actions/tasks-actions'
+import {
+  listTasks,
+  fetchClientsAndTutorsAndTopics,
+  getTaskStats,
+} from '@/server-actions/tasks-actions'
 import TasksClient from './tasks-client'
 
 export default async function TasksPage() {
-  const [tasks, clientsAndTutors, stats] = await Promise.all([
+  const [tasks, data, stats] = await Promise.all([
     listTasks(),
-    fetchClientsAndTutors(),
+    fetchClientsAndTutorsAndTopics(),
     getTaskStats(),
   ])
 
@@ -43,8 +47,9 @@ export default async function TasksPage() {
 
       <TasksClient
         initialTasks={tasks}
-        initialClients={clientsAndTutors.clients}
-        initialTutors={clientsAndTutors.tutors}
+        initialClients={data.clients}
+        initialTutors={data.tutors}
+        initialTopics={data.topics}
       />
     </div>
   )

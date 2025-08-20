@@ -54,6 +54,60 @@ function formatDate(dateString: string) {
   })
 }
 
+function getDaysRemaining(dueDateString: string) {
+  const dueDate = new Date(dueDateString)
+  const today = new Date()
+
+  // Reset time to start of day for accurate comparison
+  dueDate.setHours(0, 0, 0, 0)
+  today.setHours(0, 0, 0, 0)
+
+  const diffTime = dueDate.getTime() - today.getTime()
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+  return diffDays
+}
+
+function getDaysRemainingBadge(daysRemaining: number) {
+  if (daysRemaining < 0) {
+    return (
+      <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 text-xs rounded-full">
+        {Math.abs(daysRemaining)} days overdue
+      </Badge>
+    )
+  } else if (daysRemaining === 0) {
+    return (
+      <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 text-xs rounded-full">
+        Due today
+      </Badge>
+    )
+  } else if (daysRemaining === 1) {
+    return (
+      <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 text-xs rounded-full">
+        1 day left
+      </Badge>
+    )
+  } else if (daysRemaining <= 3) {
+    return (
+      <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 text-xs rounded-full">
+        {daysRemaining} days left
+      </Badge>
+    )
+  } else if (daysRemaining <= 7) {
+    return (
+      <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 text-xs rounded-full">
+        {daysRemaining} days left
+      </Badge>
+    )
+  } else {
+    return (
+      <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 text-xs rounded-full">
+        {daysRemaining} days left
+      </Badge>
+    )
+  }
+}
+
 function TaskCard({
   task,
   onScoreUpdate,
@@ -143,8 +197,11 @@ function TaskCard({
                 <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   Due Date
                 </div>
-                <div className="font-medium text-sm text-foreground">
-                  {formatDate(task.dueDate)}
+                <div className="flex items-center gap-2">
+                  <div className="font-medium text-sm text-foreground">
+                    {formatDate(task.dueDate)}
+                  </div>
+                  {getDaysRemainingBadge(getDaysRemaining(task.dueDate))}
                 </div>
               </div>
             </div>
@@ -375,7 +432,7 @@ export default function TutorTasksPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mt-3">
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 flex items-center gap-2">
               <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
                 <FileText className="h-4 w-4" />
@@ -409,6 +466,22 @@ export default function TutorTasksPage() {
                   {filteredTasks.filter((t) => t.status === 'Completed').length}
                 </div>
                 <div className="text-xs opacity-80">Completed</div>
+              </div>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 flex items-center gap-2">
+              <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                <Clock className="h-4 w-4" />
+              </div>
+              <div>
+                <div className="text-lg font-bold">
+                  {
+                    filteredTasks.filter(
+                      (t) => getDaysRemaining(t.dueDate) <= 3 && getDaysRemaining(t.dueDate) >= 0,
+                    ).length
+                  }
+                </div>
+                <div className="text-xs opacity-80">Due Soon</div>
               </div>
             </div>
           </div>

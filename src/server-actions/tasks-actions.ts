@@ -2,9 +2,10 @@
 
 import { getPayload } from 'payload'
 import config from '@payload-config'
-import { Task } from '@/payload-types'
+import { Task, Topic } from '@/payload-types'
 
 export type TaskDoc = Task
+export type TopicDoc = Topic
 
 export async function listTasks(): Promise<TaskDoc[]> {
   try {
@@ -25,11 +26,11 @@ export async function listTasks(): Promise<TaskDoc[]> {
   }
 }
 
-export async function fetchClientsAndTutors() {
+export async function fetchClientsAndTutorsAndTopics() {
   try {
     const payload = await getPayload({ config })
 
-    const [clientsResult, tutorsResult] = await Promise.all([
+    const [clientsResult, tutorsResult, topicsResult] = await Promise.all([
       payload.find({
         collection: 'clients',
         limit: 500,
@@ -40,17 +41,24 @@ export async function fetchClientsAndTutors() {
         limit: 500,
         depth: 1,
       }),
+      payload.find({
+        collection: 'topics',
+        limit: 500,
+        depth: 1,
+      }),
     ])
 
     return {
       clients: clientsResult.docs,
       tutors: tutorsResult.docs,
+      topics: topicsResult.docs,
     }
   } catch (error) {
-    console.error('Error fetching clients and tutors:', error)
+    console.error('Error fetching clients, tutors, and topics:', error)
     return {
       clients: [],
       tutors: [],
+      topics: [],
     }
   }
 }
@@ -60,11 +68,18 @@ export async function createTask(formData: FormData): Promise<TaskDoc | null> {
     const payload = await getPayload({ config })
 
     const name = formData.get('name') as string
+    const description = formData.get('description') as string
+    const dueDate = formData.get('dueDate') as string
     const tutor = formData.get('tutor') as string
     const client = formData.get('client') as string
     const topic = formData.get('topic') as string
     const status = formData.get('status') as string
     const score = formData.get('score') as string
+
+    // Validate required fields
+    if (!name || !tutor || !client || !topic) {
+      throw new Error('Missing required fields: name, tutor, client, and topic are all required')
+    }
 
     const result = await payload.create({
       collection: 'tasks',
@@ -74,6 +89,8 @@ export async function createTask(formData: FormData): Promise<TaskDoc | null> {
         client: Number(client),
         topic: Number(topic),
         status: (status as 'pending' | 'completed') || 'pending',
+        ...(description && { description }),
+        ...(dueDate && { dueDate }),
         ...(score && { score: Number(score) }),
       },
     })
@@ -90,6 +107,7 @@ export async function updateTask(
   data: Partial<{
     name: string
     description: string
+    dueDate: string
     tutor: number
     status: 'pending' | 'completed'
     score: number
