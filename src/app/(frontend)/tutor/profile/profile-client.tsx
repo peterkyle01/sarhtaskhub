@@ -15,7 +15,7 @@ import {
   TutorDoc,
 } from '@/server-actions/tutors-actions'
 import { Subject } from '@/payload-types'
-import { Eye, EyeOff, Save, User, Key, Upload, Camera } from 'lucide-react'
+import { Eye, EyeOff, Save, User, Key, Upload, Camera, LoaderCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 interface Props {
@@ -222,7 +222,7 @@ export function TutorProfileClient({ initialProfile, availableSubjects }: Props)
                 </Avatar>
                 {isUploadingImage && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-full">
-                    <Upload className="h-6 w-6 text-white animate-spin" />
+                    <LoaderCircle className="h-6 w-6 text-white animate-spin" />
                   </div>
                 )}
                 <input
@@ -251,7 +251,7 @@ export function TutorProfileClient({ initialProfile, availableSubjects }: Props)
                   >
                     {isUploadingImage ? (
                       <>
-                        <Upload className="h-3 w-3 mr-1 animate-spin" />
+                        <LoaderCircle className="h-3 w-3 mr-1 animate-spin" />
                         Uploading...
                       </>
                     ) : (
