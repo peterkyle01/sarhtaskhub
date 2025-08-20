@@ -46,6 +46,50 @@ function getPlatformBadge(platform: string) {
   )
 }
 
+function getUrgencyBadge(mostUrgentTask?: AssignedClientSummary['mostUrgentTask']) {
+  if (!mostUrgentTask) return null
+
+  const { daysRemaining, isOverdue } = mostUrgentTask
+
+  if (isOverdue) {
+    return (
+      <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 text-xs rounded-full">
+        {Math.abs(daysRemaining)} days overdue
+      </Badge>
+    )
+  } else if (daysRemaining === 0) {
+    return (
+      <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 text-xs rounded-full">
+        Due today
+      </Badge>
+    )
+  } else if (daysRemaining === 1) {
+    return (
+      <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 text-xs rounded-full">
+        1 day left
+      </Badge>
+    )
+  } else if (daysRemaining <= 3) {
+    return (
+      <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 text-xs rounded-full">
+        {daysRemaining} days left
+      </Badge>
+    )
+  } else if (daysRemaining <= 7) {
+    return (
+      <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 text-xs rounded-full">
+        {daysRemaining} days left
+      </Badge>
+    )
+  } else {
+    return (
+      <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 text-xs rounded-full">
+        {daysRemaining} days left
+      </Badge>
+    )
+  }
+}
+
 export default function AssignedClientsPage() {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState('')
@@ -236,6 +280,7 @@ export default function AssignedClientsPage() {
                             {client.name}
                           </h3>
                           {getPlatformBadge(client.platform)}
+                          {getUrgencyBadge(client.mostUrgentTask)}
                           <span className="text-xs text-muted-foreground hidden sm:inline">
                             • {client.taskCounts.total} tasks
                           </span>
@@ -329,6 +374,7 @@ export default function AssignedClientsPage() {
                       {client.name}
                     </h3>
                     <p className="text-xs text-muted-foreground truncate">{client.courseName}</p>
+                    <div className="mt-1">{getUrgencyBadge(client.mostUrgentTask)}</div>
                   </div>
                   <div className="text-right">
                     <Badge className="text-xs bg-muted/50" variant="outline">

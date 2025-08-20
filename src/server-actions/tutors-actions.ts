@@ -40,6 +40,7 @@ export async function createTutor(data: {
   fullName: string
   email: string
   phone?: string
+  password: string
 }): Promise<TutorDoc | null> {
   try {
     const payload = await getPayload({ config })
@@ -49,7 +50,6 @@ export async function createTutor(data: {
       collection: 'tutors',
       data: {
         ...data,
-        password: 'temp123!', // They'll need to reset this
         role: 'tutor',
       },
     })
@@ -98,6 +98,184 @@ export async function deleteTutor(id: number): Promise<boolean> {
   } catch (error) {
     console.error('Error deleting tutor:', error)
     return false
+  }
+}
+
+export async function resetTutorPassword(id: number, newPassword: string): Promise<boolean> {
+  try {
+    const payload = await getPayload({ config })
+
+    await payload.update({
+      collection: 'tutors',
+      id,
+      data: {
+        password: newPassword,
+      },
+    })
+
+    return true
+  } catch (error) {
+    console.error('Error resetting tutor password:', error)
+    return false
+  }
+}
+
+export async function getCurrentTutorProfile(): Promise<TutorDoc | null> {
+  try {
+    const { getCurrentUser } = await import('./auth-actions')
+    const user = await getCurrentUser()
+
+    if (!user || user.collection !== 'tutors') {
+      return null
+    }
+
+    const payload = await getPayload({ config })
+
+    const tutor = await payload.findByID({
+      collection: 'tutors',
+      id: user.id,
+      depth: 2,
+    })
+
+    return tutor
+  } catch (error) {
+    console.error('Error getting current tutor profile:', error)
+    return null
+  }
+}
+
+export async function updateCurrentTutorProfile(data: {
+  fullName: string
+  phone?: string
+  subjects?: number[]
+  profilePicture?: number
+}): Promise<TutorDoc | null> {
+  try {
+    const { getCurrentUser } = await import('./auth-actions')
+    const user = await getCurrentUser()
+
+    if (!user || user.collection !== 'tutors') {
+      throw new Error('TUTOR_ACCESS_REQUIRED')
+    }
+
+    const payload = await getPayload({ config })
+
+    const result = await payload.update({
+      collection: 'tutors',
+      id: user.id,
+      data,
+    })
+
+    return result
+  } catch (error) {
+    console.error('Error updating tutor profile:', error)
+    return null
+  }
+}
+
+export async function uploadProfilePicture(
+  formData: FormData,
+): Promise<{ success: boolean; mediaId?: number; error?: string }> {
+  try {
+    const { getCurrentUser } = await import('./auth-actions')
+    const user = await getCurrentUser()
+
+    if (!user || user.collection !== 'tutors') {
+      return { success: false, error: 'TUTOR_ACCESS_REQUIRED' }
+    }
+
+    const payload = await getPayload({ config })
+    const file = formData.get('file') as File
+
+    if (!file) {
+      return { success: false, error: 'No file provided' }
+    }
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      return {
+        success: false,
+        error: 'Invalid file type. Please upload a JPEG, PNG, or WebP image.',
+      }
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      return {
+        success: false,
+        error: 'File size too large. Please upload an image smaller than 5MB.',
+      }
+    }
+
+    // Convert File to Buffer for Payload
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+
+    // Create the file object that Payload expects
+    const payloadFile = {
+      data: buffer,
+      mimetype: file.type,
+      name: file.name,
+      size: file.size,
+    }
+
+    // Upload to media collection
+    const result = await payload.create({
+      collection: 'media',
+      data: {
+        alt: `${user.email || 'User'} profile picture`,
+      },
+      file: payloadFile,
+    })
+
+    return { success: true, mediaId: result.id as number }
+  } catch (error) {
+    console.error('Error uploading profile picture:', error)
+    return { success: false, error: 'Failed to upload image' }
+  }
+}
+
+export async function updateCurrentTutorPassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { getCurrentUser } = await import('./auth-actions')
+    const user = await getCurrentUser()
+
+    if (!user || user.collection !== 'tutors') {
+      return { success: false, error: 'TUTOR_ACCESS_REQUIRED' }
+    }
+
+    const payload = await getPayload({ config })
+
+    // First verify the current password by attempting a login
+    try {
+      await payload.login({
+        collection: 'tutors',
+        data: {
+          email: user.email,
+          password: currentPassword,
+        },
+      })
+    } catch (_error) {
+      return { success: false, error: 'Current password is incorrect' }
+    }
+
+    // Update the password
+    await payload.update({
+      collection: 'tutors',
+      id: user.id,
+      data: {
+        password: newPassword,
+      },
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error updating tutor password:', error)
+    return { success: false, error: 'Failed to update password' }
   }
 }
 
@@ -300,6 +478,11 @@ export interface AssignedClientSummary {
     overdue: number
   }
   nextDeadline?: string
+  mostUrgentTask?: {
+    dueDate: string
+    daysRemaining: number
+    isOverdue: boolean
+  }
 }
 
 export interface ClientTaskItem {
@@ -383,6 +566,27 @@ export async function listAssignedClientsForCurrentTutor(): Promise<AssignedClie
       const nextDeadline =
         upcomingTasks.length > 0 ? upcomingTasks[0].dueDate || undefined : undefined
 
+      // Calculate most urgent task info
+      let mostUrgentTask = undefined
+      if (upcomingTasks.length > 0) {
+        const urgentTaskDueDate = upcomingTasks[0].dueDate!
+        const dueDate = new Date(urgentTaskDueDate)
+        const today = new Date()
+
+        // Reset time to start of day for accurate comparison
+        dueDate.setHours(0, 0, 0, 0)
+        today.setHours(0, 0, 0, 0)
+
+        const diffTime = dueDate.getTime() - today.getTime()
+        const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+        mostUrgentTask = {
+          dueDate: urgentTaskDueDate,
+          daysRemaining,
+          isOverdue: daysRemaining < 0,
+        }
+      }
+
       // Get course name from first task with topic/subject
       const taskWithSubject = tasks.find((t) => {
         const topic = typeof t.topic === 'object' ? t.topic : null
@@ -426,6 +630,7 @@ export async function listAssignedClientsForCurrentTutor(): Promise<AssignedClie
           overdue: overdueTasks.length,
         },
         nextDeadline,
+        mostUrgentTask,
       }
     })
   } catch (error) {
