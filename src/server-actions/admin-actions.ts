@@ -168,3 +168,232 @@ export async function uploadAdminProfilePicture(
     return { success: false, error: 'Failed to upload image' }
   }
 }
+
+// Admin management functions
+export async function getAllAdmins(): Promise<Admin[]> {
+  try {
+    const { getCurrentUser } = await import('./auth-actions')
+    const user = await getCurrentUser()
+
+    if (!user || (user.collection !== 'admins' && user.collection !== 'superadmins')) {
+      throw new Error('ADMIN_ACCESS_REQUIRED')
+    }
+
+    const payload = await getPayload({ config })
+
+    const { docs } = await payload.find({
+      collection: 'admins',
+      depth: 2,
+      limit: 1000,
+      sort: '-createdAt',
+    })
+
+    return docs as Admin[]
+  } catch (error) {
+    console.error('Error getting all admins:', error)
+    return []
+  }
+}
+
+export async function createAdmin(data: {
+  fullName: string
+  email: string
+  password: string
+  phone?: string
+}): Promise<{ success: boolean; error?: string; admin?: Admin }> {
+  try {
+    const { getCurrentUser } = await import('./auth-actions')
+    const user = await getCurrentUser()
+
+    if (!user || (user.collection !== 'admins' && user.collection !== 'superadmins')) {
+      return { success: false, error: 'ADMIN_ACCESS_REQUIRED' }
+    }
+
+    const payload = await getPayload({ config })
+
+    // Check if email already exists
+    const existingAdmin = await payload.find({
+      collection: 'admins',
+      where: {
+        email: {
+          equals: data.email,
+        },
+      },
+    })
+
+    if (existingAdmin.docs.length > 0) {
+      return { success: false, error: 'An admin with this email already exists' }
+    }
+
+    const result = await payload.create({
+      collection: 'admins',
+      data: {
+        fullName: data.fullName,
+        email: data.email,
+        password: data.password,
+        phone: data.phone,
+        role: 'admin',
+      },
+    })
+
+    return { success: true, admin: result as Admin }
+  } catch (error) {
+    console.error('Error creating admin:', error)
+    return { success: false, error: 'Failed to create admin' }
+  }
+}
+
+export async function updateAdmin(
+  id: number,
+  data: {
+    fullName?: string
+    email?: string
+    phone?: string
+  },
+): Promise<{ success: boolean; error?: string; admin?: Admin }> {
+  try {
+    const { getCurrentUser } = await import('./auth-actions')
+    const user = await getCurrentUser()
+
+    if (!user || (user.collection !== 'admins' && user.collection !== 'superadmins')) {
+      return { success: false, error: 'ADMIN_ACCESS_REQUIRED' }
+    }
+
+    const payload = await getPayload({ config })
+
+    // Check if email already exists for another admin
+    if (data.email) {
+      const existingAdmin = await payload.find({
+        collection: 'admins',
+        where: {
+          and: [
+            {
+              email: {
+                equals: data.email,
+              },
+            },
+            {
+              id: {
+                not_equals: id,
+              },
+            },
+          ],
+        },
+      })
+
+      if (existingAdmin.docs.length > 0) {
+        return { success: false, error: 'An admin with this email already exists' }
+      }
+    }
+
+    const result = await payload.update({
+      collection: 'admins',
+      id,
+      data,
+    })
+
+    return { success: true, admin: result as Admin }
+  } catch (error) {
+    console.error('Error updating admin:', error)
+    return { success: false, error: 'Failed to update admin' }
+  }
+}
+
+export async function updateAdminPassword(
+  id: number,
+  newPassword: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { getCurrentUser } = await import('./auth-actions')
+    const user = await getCurrentUser()
+
+    if (!user || (user.collection !== 'admins' && user.collection !== 'superadmins')) {
+      return { success: false, error: 'ADMIN_ACCESS_REQUIRED' }
+    }
+
+    const payload = await getPayload({ config })
+
+    await payload.update({
+      collection: 'admins',
+      id,
+      data: {
+        password: newPassword,
+      },
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error updating admin password:', error)
+    return { success: false, error: 'Failed to update password' }
+  }
+}
+
+export async function deleteAdmin(id: number): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { getCurrentUser } = await import('./auth-actions')
+    const user = await getCurrentUser()
+
+    if (!user || (user.collection !== 'admins' && user.collection !== 'superadmins')) {
+      return { success: false, error: 'ADMIN_ACCESS_REQUIRED' }
+    }
+
+    // Prevent self-deletion
+    if (user.id === id) {
+      return { success: false, error: 'Cannot delete your own account' }
+    }
+
+    const payload = await getPayload({ config })
+
+    await payload.delete({
+      collection: 'admins',
+      id,
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting admin:', error)
+    return { success: false, error: 'Failed to delete admin' }
+  }
+}
+
+export async function getAdminStats(): Promise<{
+  total: number
+  recentlyCreated: number
+}> {
+  try {
+    const { getCurrentUser } = await import('./auth-actions')
+    const user = await getCurrentUser()
+
+    if (!user || (user.collection !== 'admins' && user.collection !== 'superadmins')) {
+      return { total: 0, recentlyCreated: 0 }
+    }
+
+    const payload = await getPayload({ config })
+
+    // Get total count
+    const totalResult = await payload.count({
+      collection: 'admins',
+    })
+
+    // Get recently created (last 30 days)
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+    const recentResult = await payload.count({
+      collection: 'admins',
+      where: {
+        createdAt: {
+          greater_than: thirtyDaysAgo.toISOString(),
+        },
+      },
+    })
+
+    return {
+      total: totalResult.totalDocs,
+      recentlyCreated: recentResult.totalDocs,
+    }
+  } catch (error) {
+    console.error('Error getting admin stats:', error)
+    return { total: 0, recentlyCreated: 0 }
+  }
+}

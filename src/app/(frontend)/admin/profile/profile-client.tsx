@@ -13,7 +13,7 @@ import {
   uploadAdminProfilePicture,
   AdminDoc,
 } from '@/server-actions/admin-actions'
-import { Eye, EyeOff, Save, User, Key, Upload, Camera } from 'lucide-react'
+import { Eye, EyeOff, Save, User, Key, Upload, Camera, LoaderCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 interface Props {
@@ -220,7 +220,7 @@ export function AdminProfileClient({ initialProfile }: Props) {
                 </Avatar>
                 {isUploadingImage && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-full">
-                    <Upload className="h-6 w-6 text-white animate-spin" />
+                    <LoaderCircle className="h-6 w-6 text-white animate-spin" />
                   </div>
                 )}
                 {!isSuperAdmin && (
@@ -254,7 +254,7 @@ export function AdminProfileClient({ initialProfile }: Props) {
                     >
                       {isUploadingImage ? (
                         <>
-                          <Upload className="h-3 w-3 mr-1 animate-spin" />
+                          <LoaderCircle className="h-3 w-3 mr-1 animate-spin" />
                           Uploading...
                         </>
                       ) : (

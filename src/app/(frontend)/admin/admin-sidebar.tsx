@@ -16,7 +16,7 @@ import {
   SidebarRail,
   useSidebar,
 } from '@/components/ui/sidebar'
-import { FileText, Home, UserCheck, BookOpen, User } from 'lucide-react'
+import { FileText, Home, UserCheck, BookOpen, User, UserLock } from 'lucide-react'
 import { LogoutButton } from '@/components/custom/logout-button'
 import { displayRole } from '@/lib/user-utils'
 import Link from 'next/link'
@@ -31,6 +31,7 @@ const navigationItems = [
   { title: 'Subjects', url: '/admin/subjects', icon: BookOpen },
   { title: 'Clients', url: '/admin/clients', icon: UserCheck },
   { title: 'Tutors', url: '/admin/tutors', icon: UserCheck },
+  { title: 'Admins', url: '/admin/admins', icon: UserLock },
   { title: 'Tasks', url: '/admin/tasks', icon: FileText },
   { title: 'Profile', url: '/admin/profile', icon: User },
 ]
