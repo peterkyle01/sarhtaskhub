@@ -14,6 +14,7 @@ import {
   User,
   GraduationCap,
   BookOpen,
+  CheckCircle,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -37,6 +38,34 @@ import {
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { createTask, updateTask, deleteTask, TaskDoc } from '@/server-actions/tasks-actions'
+
+// Helper function to format relative time
+function formatRelativeTime(dateString: string): string {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+
+  if (diffInSeconds < 60) {
+    return 'just now'
+  } else if (diffInSeconds < 3600) {
+    const minutes = Math.floor(diffInSeconds / 60)
+    return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`
+  } else if (diffInSeconds < 86400) {
+    const hours = Math.floor(diffInSeconds / 3600)
+    return `${hours} hour${hours !== 1 ? 's' : ''} ago`
+  } else if (diffInSeconds < 2592000) {
+    // 30 days
+    const days = Math.floor(diffInSeconds / 86400)
+    return `${days} day${days !== 1 ? 's' : ''} ago`
+  } else if (diffInSeconds < 31536000) {
+    // 365 days
+    const months = Math.floor(diffInSeconds / 2592000)
+    return `${months} month${months !== 1 ? 's' : ''} ago`
+  } else {
+    const years = Math.floor(diffInSeconds / 31536000)
+    return `${years} year${years !== 1 ? 's' : ''} ago`
+  }
+}
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -317,7 +346,13 @@ export default function TasksClient({
 
         const created = await createTask(formData)
         if (created) {
-          setTasks((prev) => [created, ...prev])
+          // Add current timestamp for consistency
+          const createdWithTimestamp = {
+            ...created,
+            updatedAt: created.updatedAt || new Date().toISOString(),
+            createdAt: created.createdAt || new Date().toISOString(),
+          }
+          setTasks((prev) => [createdWithTimestamp, ...prev])
           handleCloseAddModal()
         }
       } catch (error) {
@@ -360,7 +395,12 @@ export default function TasksClient({
 
         const updated = await updateTask(editingTask.id, updateData)
         if (updated) {
-          setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
+          // Update the local state with the current timestamp for updatedAt
+          const updatedWithTimestamp = {
+            ...updated,
+            updatedAt: new Date().toISOString(),
+          }
+          setTasks((prev) => prev.map((t) => (t.id === updated.id ? updatedWithTimestamp : t)))
           setIsEditModalOpen(false)
           setEditingTask(null)
           setEditSelectedTopics(new Set())
@@ -778,14 +818,20 @@ export default function TasksClient({
                         {/* Compact info row */}
                         <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mt-2">
                           <div className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
+                            {task.status === 'completed' ? (
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                            ) : (
+                              <Calendar className="w-4 h-4" />
+                            )}
                             <span>
-                              {task.dueDate
-                                ? new Date(task.dueDate).toLocaleDateString()
-                                : 'No due date'}
+                              {task.status === 'completed'
+                                ? `Submitted ${formatRelativeTime(task.updatedAt)}`
+                                : task.dueDate
+                                  ? new Date(task.dueDate).toLocaleDateString()
+                                  : 'No due date'}
                             </span>
                           </div>
-                          {task.dueDate && (
+                          {task.dueDate && task.status !== 'completed' && (
                             <div className="flex items-center gap-1">
                               {(() => {
                                 const dueDateStatus = getDueDateStatus(task.dueDate)

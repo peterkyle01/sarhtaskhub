@@ -57,6 +57,33 @@ function formatDate(dateString: string) {
   })
 }
 
+function formatRelativeTime(dateString: string): string {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+
+  if (diffInSeconds < 60) {
+    return 'just now'
+  } else if (diffInSeconds < 3600) {
+    const minutes = Math.floor(diffInSeconds / 60)
+    return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`
+  } else if (diffInSeconds < 86400) {
+    const hours = Math.floor(diffInSeconds / 3600)
+    return `${hours} hour${hours !== 1 ? 's' : ''} ago`
+  } else if (diffInSeconds < 2592000) {
+    // 30 days
+    const days = Math.floor(diffInSeconds / 86400)
+    return `${days} day${days !== 1 ? 's' : ''} ago`
+  } else if (diffInSeconds < 31536000) {
+    // 365 days
+    const months = Math.floor(diffInSeconds / 2592000)
+    return `${months} month${months !== 1 ? 's' : ''} ago`
+  } else {
+    const years = Math.floor(diffInSeconds / 31536000)
+    return `${years} year${years !== 1 ? 's' : ''} ago`
+  }
+}
+
 function getDaysRemaining(dueDateString: string) {
   const dueDate = new Date(dueDateString)
   const today = new Date()
@@ -210,16 +237,31 @@ function TaskCard({
 
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>
+                <div
+                  className={`w-1.5 h-1.5 rounded-full ${task.status === 'Completed' ? 'bg-green-500' : 'bg-orange-500'}`}
+                ></div>
                 <div>
-                  <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    Due Date
+                  <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                    {task.status === 'Completed' ? (
+                      <>
+                        <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
+                        Submitted
+                      </>
+                    ) : (
+                      <>
+                        <Clock className="h-3 w-3 text-orange-600 dark:text-orange-400" />
+                        Due Date
+                      </>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="font-medium text-sm text-foreground">
-                      {formatDate(task.dueDate)}
+                      {task.status === 'Completed'
+                        ? formatRelativeTime(task.updatedAt)
+                        : formatDate(task.dueDate)}
                     </div>
-                    {getDaysRemainingBadge(getDaysRemaining(task.dueDate))}
+                    {task.status !== 'Completed' &&
+                      getDaysRemainingBadge(getDaysRemaining(task.dueDate))}
                   </div>
                 </div>
               </div>
@@ -405,10 +447,18 @@ export default function TutorTasksPage() {
     try {
       const success = await updateTaskScore(taskId, score)
       if (success) {
-        // Update the task in the local state with both score and status
+        // Update the task in the local state with score, status, and current timestamp
+        const currentTimestamp = new Date().toISOString()
         setTasks((prevTasks) =>
           prevTasks.map((task) =>
-            task.id === taskId ? { ...task, score, status: 'Completed' } : task,
+            task.id === taskId
+              ? {
+                  ...task,
+                  score,
+                  status: 'Completed',
+                  updatedAt: currentTimestamp,
+                }
+              : task,
           ),
         )
         setUpdateSuccess(true)
