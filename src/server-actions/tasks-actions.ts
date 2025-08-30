@@ -72,13 +72,23 @@ export async function createTask(formData: FormData): Promise<TaskDoc | null> {
     const dueDate = formData.get('dueDate') as string
     const tutor = formData.get('tutor') as string
     const client = formData.get('client') as string
-    const topic = formData.get('topic') as string
+    const topics = formData.get('topics') as string // Now expects comma-separated topic IDs
     const status = formData.get('status') as string
     const score = formData.get('score') as string
 
     // Validate required fields
-    if (!name || !tutor || !client || !topic) {
-      throw new Error('Missing required fields: name, tutor, client, and topic are all required')
+    if (!name || !tutor || !client || !topics) {
+      throw new Error('Missing required fields: name, tutor, client, and topics are all required')
+    }
+
+    // Parse topics - can be a single ID or comma-separated IDs
+    const topicIds = topics
+      .split(',')
+      .map((id) => Number(id.trim()))
+      .filter((id) => !isNaN(id))
+
+    if (topicIds.length === 0) {
+      throw new Error('At least one valid topic ID is required')
     }
 
     const result = await payload.create({
@@ -87,7 +97,7 @@ export async function createTask(formData: FormData): Promise<TaskDoc | null> {
         name,
         tutor: Number(tutor),
         client: Number(client),
-        topic: Number(topic),
+        topics: topicIds,
         status: (status as 'pending' | 'completed') || 'pending',
         ...(description && { description }),
         ...(dueDate && { dueDate }),
@@ -109,6 +119,7 @@ export async function updateTask(
     description: string
     dueDate: string
     tutor: number
+    topics: string // comma-separated topic IDs
     status: 'pending' | 'completed'
     score: number
     notes: string
@@ -118,11 +129,34 @@ export async function updateTask(
     const payload = await getPayload({ config })
 
     // Convert notes to description if provided
-    const updateData = { ...data }
+    const updateData: Record<string, unknown> = { ...data }
     if (data.notes !== undefined) {
       updateData.description = data.notes
       delete updateData.notes
     }
+
+    // Handle topics if provided
+    if (data.topics !== undefined) {
+      const topicIds = data.topics
+        .split(',')
+        .map((id) => Number(id.trim()))
+        .filter((id) => !isNaN(id))
+
+      // Always remove the string version first
+      delete updateData.topics
+
+      // Add back the processed array if we have valid topics
+      if (topicIds.length > 0) {
+        updateData.topics = topicIds
+      }
+    }
+
+    // Automatically set status to completed when a score is provided
+    if (data.score !== undefined && data.score !== null) {
+      updateData.status = 'completed'
+    }
+
+    console.log('Update data being sent to payload:', updateData)
 
     const result = await payload.update({
       collection: 'tasks',

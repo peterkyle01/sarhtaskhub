@@ -9,7 +9,7 @@ const Tasks: CollectionConfig = {
     { name: 'dueDate', type: 'date' },
     { name: 'tutor', type: 'relationship', relationTo: 'tutors', required: true },
     { name: 'client', type: 'relationship', relationTo: 'clients', required: true },
-    { name: 'topic', type: 'relationship', relationTo: 'topics', required: true },
+    { name: 'topics', type: 'relationship', relationTo: 'topics', hasMany: true, required: true },
     {
       name: 'status',
       type: 'select',
