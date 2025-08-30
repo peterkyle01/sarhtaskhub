@@ -737,6 +737,8 @@ export interface AssignedTask {
   status: 'Completed' | 'In Progress' | 'Pending'
   priority: 'high' | 'medium' | 'low'
   score: number | null
+  updatedAt: string // ISO datetime when task was last updated
+  createdAt: string // ISO datetime when task was created
   topics: Array<{
     id: number
     name: string
@@ -849,6 +851,8 @@ export async function listAssignedTasksForCurrentTutor(): Promise<AssignedTask[]
         status,
         priority,
         score: task.score || null,
+        updatedAt: task.updatedAt || task.createdAt || new Date().toISOString(),
+        createdAt: task.createdAt || new Date().toISOString(),
         topics: topics,
       }
     })
