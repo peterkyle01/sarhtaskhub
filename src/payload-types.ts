@@ -323,7 +323,7 @@ export interface Task {
   dueDate?: string | null;
   tutor: number | Tutor;
   client: number | Client;
-  topic: number | Topic;
+  topics: (number | Topic)[];
   status: 'pending' | 'completed';
   score?: number | null;
   updatedAt: string;
@@ -545,7 +545,7 @@ export interface TasksSelect<T extends boolean = true> {
   dueDate?: T;
   tutor?: T;
   client?: T;
-  topic?: T;
+  topics?: T;
   status?: T;
   score?: T;
   updatedAt?: T;

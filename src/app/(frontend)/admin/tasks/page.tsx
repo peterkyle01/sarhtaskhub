@@ -6,13 +6,15 @@ import {
   fetchClientsAndTutorsAndTopics,
   getTaskStats,
 } from '@/server-actions/tasks-actions'
+import { getAllSubjectsWithTopics } from '@/server-actions/subjects-actions'
 import TasksClient from './tasks-client'
 
 export default async function TasksPage() {
-  const [tasks, data, stats] = await Promise.all([
+  const [tasks, data, stats, subjectsWithTopics] = await Promise.all([
     listTasks(),
     fetchClientsAndTutorsAndTopics(),
     getTaskStats(),
+    getAllSubjectsWithTopics(),
   ])
 
   return (
@@ -50,6 +52,7 @@ export default async function TasksPage() {
         initialClients={data.clients}
         initialTutors={data.tutors}
         initialTopics={data.topics}
+        subjectsWithTopics={subjectsWithTopics}
       />
     </div>
   )

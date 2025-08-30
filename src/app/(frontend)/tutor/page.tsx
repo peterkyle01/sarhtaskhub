@@ -26,8 +26,7 @@ interface DashboardTask {
   taskType: string
   platform: string
   dueTime: string
-  status: 'Completed' | 'In Progress' | 'Pending'
-  priority: 'high' | 'medium' | 'low'
+  status: 'Completed' | 'Pending'
   estimatedTime: string
 }
 
@@ -46,24 +45,22 @@ function getStatusBadge(status: DashboardTask['status']) {
   const map: Record<DashboardTask['status'], string> = {
     Completed:
       'bg-green-100 text-green-700 dark:bg-green-400/20 dark:text-green-300 dark:ring-1 dark:ring-green-400/30',
-    'In Progress':
-      'bg-sky-100 text-sky-700 dark:bg-sky-400/20 dark:text-sky-300 dark:ring-1 dark:ring-sky-400/30',
     Pending:
       'bg-amber-100 text-amber-700 dark:bg-amber-400/20 dark:text-amber-300 dark:ring-1 dark:ring-amber-400/30',
   }
   return <Badge className={`${map[status]} rounded-full font-normal`}>{status}</Badge>
 }
 
-function getPriorityAccent(priority: DashboardTask['priority'] | DeadlineItem['priority']) {
+function getPriorityAccent(priority: DeadlineItem['priority']) {
   switch (priority) {
     case 'high':
-      return 'border-l-red-400 bg-red-50'
+      return 'border-l-red-400 bg-red-50 dark:bg-red-950/20 dark:border-l-red-500'
     case 'medium':
-      return 'border-l-amber-400 bg-amber-50'
+      return 'border-l-amber-400 bg-amber-50 dark:bg-amber-950/20 dark:border-l-amber-500'
     case 'low':
-      return 'border-l-emerald-400 bg-emerald-50'
+      return 'border-l-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 dark:border-l-emerald-500'
     default:
-      return 'border-l-gray-300 bg-gray-50'
+      return 'border-l-gray-300 bg-gray-50 dark:bg-gray-900/20 dark:border-l-gray-600'
   }
 }
 
@@ -80,7 +77,7 @@ export default function TutorDashboard() {
     completedTasks: number
     pendingTasks: number
   } | null>(null)
-  const [todayTasks, setTodayTasks] = useState<DashboardTask[]>([])
+  const [dashboardTasks, setDashboardTasks] = useState<DashboardTask[]>([])
   const [upcomingDeadlines, setUpcomingDeadlines] = useState<DeadlineItem[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -92,7 +89,7 @@ export default function TutorDashboard() {
         const data = await getTutorDashboardData()
         if (!active || !data) return
         setStats(data.stats)
-        setTodayTasks(data.todayTasks)
+        setDashboardTasks(data.dashboardTasks)
         setUpcomingDeadlines(data.upcomingDeadlines)
       } catch (e) {
         console.error('Failed to load dashboard', e)
@@ -112,21 +109,21 @@ export default function TutorDashboard() {
   }, [stats])
 
   const todayCompletionRate = useMemo(() => {
-    if (!todayTasks.length) return 0
-    const completed = todayTasks.filter((t) => t.status === 'Completed').length
-    return Math.round((completed / todayTasks.length) * 100)
-  }, [todayTasks])
+    if (!dashboardTasks.length) return 0
+    const completed = dashboardTasks.filter((t) => t.status === 'Completed').length
+    return Math.round((completed / dashboardTasks.length) * 100)
+  }, [dashboardTasks])
 
   const progressData = useMemo(
     () => [
-      { name: 'Completed', value: stats?.completedTasks || 0, color: '#10b981' },
+      { name: 'Completed', value: stats?.completedTasks || 0, color: '#22c55e' },
       { name: 'Pending', value: stats?.pendingTasks || 0, color: '#f59e0b' },
     ],
     [stats?.completedTasks, stats?.pendingTasks],
   )
 
   const progressChartConfig = {
-    Completed: { label: 'Completed', color: '#10b981' },
+    Completed: { label: 'Completed', color: '#22c55e' },
     Pending: { label: 'Pending', color: '#f59e0b' },
   }
 
@@ -168,28 +165,28 @@ export default function TutorDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-[clamp(.9rem,2.5vw,1.05rem)] sm:text-lg">
-                  Today&apos;s Tasks
+                  Your Tasks
                 </CardTitle>
                 <CardDescription className="text-xs sm:text-sm">
                   {todayCompletionRate}% completed (
-                  {todayTasks.filter((t) => t.status === 'Completed').length} of {todayTasks.length}
-                  )
+                  {dashboardTasks.filter((t) => t.status === 'Completed').length} of{' '}
+                  {dashboardTasks.length})
                 </CardDescription>
               </div>
-              <Badge className="bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 rounded-full text-xs">
-                {todayTasks.length} tasks
+              <Badge className="bg-primary/10 text-primary hover:bg-primary/20 rounded-full text-xs border-primary/20">
+                {dashboardTasks.length} tasks
               </Badge>
             </div>
             <Progress value={todayCompletionRate} className="h-1.5 sm:h-2" />
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-0">
             <div className="space-y-2 sm:space-y-3">
-              {loading && todayTasks.length === 0 && (
+              {loading && dashboardTasks.length === 0 && (
                 <div className="space-y-2 sm:space-y-3">
                   {Array.from({ length: 4 }).map((_, i) => (
                     <div
                       key={i}
-                      className="border-l-4 border-transparent rounded-lg sm:rounded-xl bg-[var(--card)] p-0"
+                      className="border-l-4 border-transparent rounded-lg sm:rounded-xl bg-card border border-border/50 dark:border-border/20 p-0"
                     >
                       <div className="p-3 sm:p-4 space-y-2">
                         <div className="flex items-center justify-between">
@@ -209,14 +206,14 @@ export default function TutorDashboard() {
                   ))}
                 </div>
               )}
-              {!loading && todayTasks.length === 0 && (
-                <div className="text-xs sm:text-sm opacity-60">No tasks for today.</div>
+              {!loading && dashboardTasks.length === 0 && (
+                <div className="text-xs sm:text-sm opacity-60">No tasks assigned.</div>
               )}
               {!loading &&
-                todayTasks.map((task) => (
+                dashboardTasks.map((task) => (
                   <Card
                     key={task.id}
-                    className={`border-l-4 ${getPriorityAccent(task.priority)} rounded-lg sm:rounded-xl shadow-sm bg-[var(--card)]`}
+                    className="rounded-lg sm:rounded-xl shadow-sm border border-border/50 dark:border-border/20"
                   >
                     <CardContent className="p-3 sm:p-4">
                       <div className="flex items-center justify-between mb-1">
@@ -242,9 +239,6 @@ export default function TutorDashboard() {
                             <span className="hidden sm:inline">Est: {task.estimatedTime}</span>
                           )}
                         </div>
-                        <Badge variant="outline" className="rounded-full text-[9px] sm:text-[10px]">
-                          {task.priority}
-                        </Badge>
                       </div>
                     </CardContent>
                   </Card>
@@ -289,9 +283,7 @@ export default function TutorDashboard() {
                       className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full"
                       style={{ backgroundColor: item.color }}
                     />
-                    <span className="text-muted-foreground dark:text-muted-foreground">
-                      {item.name}
-                    </span>
+                    <span className="text-muted-foreground">{item.name}</span>
                   </div>
                   <span className="font-medium text-foreground">{item.value}</span>
                 </div>
@@ -305,8 +297,7 @@ export default function TutorDashboard() {
       <Card className="rounded-xl sm:rounded-2xl shadow-sm">
         <CardHeader className="p-4 sm:p-6">
           <CardTitle className="text-[clamp(.9rem,2.5vw,1.05rem)] sm:text-lg flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-[var(--accent)]" /> Upcoming
-            Deadlines
+            <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-primary" /> Upcoming Deadlines
           </CardTitle>
           <CardDescription className="text-xs sm:text-sm">Time-sensitive tasks</CardDescription>
         </CardHeader>
@@ -317,7 +308,7 @@ export default function TutorDashboard() {
                 {Array.from({ length: 3 }).map((_, i) => (
                   <div
                     key={i}
-                    className="p-3 sm:p-4 rounded-lg sm:rounded-xl border-l-4 border-transparent flex flex-col gap-2 bg-[var(--card)]"
+                    className="p-3 sm:p-4 rounded-lg sm:rounded-xl border-l-4 border-transparent flex flex-col gap-2 bg-card border border-border/50 dark:border-border/20"
                   >
                     <div className="flex items-center justify-between w-full">
                       <Skeleton className="h-3 w-24" />
@@ -337,23 +328,23 @@ export default function TutorDashboard() {
               upcomingDeadlines.map((d) => (
                 <div
                   key={d.id}
-                  className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border-l-4 ${getPriorityAccent(d.priority)} flex flex-col gap-1 bg-[var(--card)]`}
+                  className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border-l-4 ${getPriorityAccent(d.priority)} flex flex-col gap-1 border border-border/50 dark:border-border/20`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-xs sm:text-sm truncate">{d.clientName}</span>
                     <Badge
                       className={`rounded-full text-[9px] sm:text-[10px] font-normal ${
                         d.hoursLeft < 24
-                          ? 'bg-red-100 text-red-700'
+                          ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
                           : d.hoursLeft < 48
-                            ? 'bg-amber-100 text-amber-700'
-                            : 'bg-emerald-100 text-emerald-700'
+                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                            : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
                       }`}
                     >
                       {getTimeUntil(d.hoursLeft)}
                     </Badge>
                   </div>
-                  <div className="text-[10px] sm:text-xs opacity-70 truncate text-muted-foreground dark:text-muted-foreground">
+                  <div className="text-[10px] sm:text-xs opacity-70 truncate text-muted-foreground">
                     {d.courseName}
                   </div>
                 </div>

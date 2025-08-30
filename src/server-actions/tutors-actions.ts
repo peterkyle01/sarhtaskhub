@@ -371,59 +371,85 @@ export async function getTutorDashboardData() {
     // Calculate overall stats
     const totalTasks = allTasks.length
     const completedTasks = allTasks.filter((task) => task.status === 'completed').length
-    const pendingTasks = totalTasks - completedTasks
+    const pendingTasks = allTasks.filter((task) => task.status === 'pending').length
 
-    // Get today's tasks (within next 24 hours)
+    // Get upcoming tasks (next 7 days) or all pending tasks if none in next 7 days
     const now = new Date()
-    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+    const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
 
-    const todayTasks = allTasks
-      .filter((task) => {
-        if (!task.dueDate) return false
-        const dueDate = new Date(task.dueDate)
-        return dueDate >= now && dueDate <= tomorrow
-      })
+    let upcomingTasks = allTasks.filter((task) => {
+      if (task.status === 'completed') return false
+      if (!task.dueDate) return true // Include tasks without due date
+      const dueDate = new Date(task.dueDate)
+      return dueDate <= nextWeek
+    })
+
+    // If no tasks in next week, show all pending tasks
+    if (upcomingTasks.length === 0) {
+      upcomingTasks = allTasks.filter((task) => task.status === 'pending')
+    }
+
+    const dashboardTasks = upcomingTasks
+      .slice(0, 8) // Limit to 8 tasks for dashboard
       .map((task) => {
         const client = typeof task.client === 'object' ? task.client : null
-        const topic = typeof task.topic === 'object' ? task.topic : null
-        const subject = topic && typeof topic.subject === 'object' ? topic.subject : null
+
+        // Handle multiple topics - get the first topic and its subject for display
+        const firstTopic =
+          Array.isArray(task.topics) && task.topics.length > 0
+            ? typeof task.topics[0] === 'object'
+              ? task.topics[0]
+              : null
+            : null
+        const subject =
+          firstTopic && typeof firstTopic.subject === 'object' ? firstTopic.subject : null
+
+        // Generate realistic estimated time based on task complexity
+        const taskComplexity = (task.name?.length || 0) + (task.description?.length || 0)
+        let estimatedTime = '1-2h'
+        if (taskComplexity > 100) estimatedTime = '3-4h'
+        else if (taskComplexity > 50) estimatedTime = '2-3h'
+        else estimatedTime = '1-2h'
 
         return {
           id: task.id as number,
           clientName: client?.name || 'Unknown Client',
           courseName: subject?.name || 'Unknown Subject',
-          taskType: topic?.name || 'Unknown Topic',
-          platform: 'Remote', // Default platform
+          taskType: firstTopic?.name || 'Unknown Topic',
+          platform: 'Online Learning',
           dueTime: task.dueDate
-            ? new Date(task.dueDate).toLocaleTimeString('en-US', {
+            ? new Date(task.dueDate).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
                 hour: 'numeric',
                 minute: '2-digit',
               })
-            : 'No due time',
-          status:
-            task.status === 'completed'
-              ? ('Completed' as const)
-              : task.status === 'pending'
-                ? ('Pending' as const)
-                : ('In Progress' as const),
-          priority: 'medium' as const, // Default priority
-          estimatedTime: '2h', // Default estimated time
+            : 'No due date',
+          status: task.status === 'completed' ? ('Completed' as const) : ('Pending' as const),
+          estimatedTime,
         }
       })
 
-    // Get upcoming deadlines (next 7 days)
-    const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
-
+    // Get upcoming deadlines (next 7 days, excluding tasks we already showed)
     const upcomingDeadlines = allTasks
       .filter((task) => {
         if (!task.dueDate || task.status === 'completed') return false
         const dueDate = new Date(task.dueDate)
-        return dueDate > tomorrow && dueDate <= nextWeek
+        const dayAfterNextWeek = new Date(now.getTime() + 8 * 24 * 60 * 60 * 1000)
+        return dueDate > nextWeek && dueDate <= dayAfterNextWeek
       })
       .map((task) => {
         const client = typeof task.client === 'object' ? task.client : null
-        const topic = typeof task.topic === 'object' ? task.topic : null
-        const subject = topic && typeof topic.subject === 'object' ? topic.subject : null
+
+        // Handle multiple topics - get the first topic and its subject for display
+        const firstTopic =
+          Array.isArray(task.topics) && task.topics.length > 0
+            ? typeof task.topics[0] === 'object'
+              ? task.topics[0]
+              : null
+            : null
+        const subject =
+          firstTopic && typeof firstTopic.subject === 'object' ? firstTopic.subject : null
         const dueDate = new Date(task.dueDate!)
         const hoursLeft = Math.round((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60))
 
@@ -452,7 +478,7 @@ export async function getTutorDashboardData() {
         completedTasks,
         pendingTasks,
       },
-      todayTasks,
+      dashboardTasks,
       upcomingDeadlines,
     }
   } catch (error) {
@@ -587,18 +613,26 @@ export async function listAssignedClientsForCurrentTutor(): Promise<AssignedClie
         }
       }
 
-      // Get course name from first task with topic/subject
+      // Get course name from first task with topics/subject
       const taskWithSubject = tasks.find((t) => {
-        const topic = typeof t.topic === 'object' ? t.topic : null
-        return topic && typeof topic.subject === 'object'
+        return (
+          Array.isArray(t.topics) &&
+          t.topics.length > 0 &&
+          typeof t.topics[0] === 'object' &&
+          t.topics[0] &&
+          typeof t.topics[0].subject === 'object'
+        )
       })
 
-      const courseName = taskWithSubject
-        ? typeof taskWithSubject.topic === 'object' &&
-          typeof taskWithSubject.topic.subject === 'object'
-          ? taskWithSubject.topic.subject.name
+      const courseName =
+        taskWithSubject &&
+        Array.isArray(taskWithSubject.topics) &&
+        taskWithSubject.topics.length > 0 &&
+        typeof taskWithSubject.topics[0] === 'object' &&
+        taskWithSubject.topics[0] &&
+        typeof taskWithSubject.topics[0].subject === 'object'
+          ? taskWithSubject.topics[0].subject.name
           : 'Unknown Course'
-        : 'Unknown Course'
 
       return {
         id: client.id as number,
@@ -663,12 +697,18 @@ export async function listClientTasksForTutor(clientId: number): Promise<ClientT
     })
 
     return tasksResult.docs.map((task) => {
-      const topic = typeof task.topic === 'object' ? task.topic : null
+      // Handle multiple topics - get the first topic for display
+      const firstTopic =
+        Array.isArray(task.topics) && task.topics.length > 0
+          ? typeof task.topics[0] === 'object'
+            ? task.topics[0]
+            : null
+          : null
 
       return {
         id: task.id as number,
         title: task.name || 'Untitled Task',
-        type: topic?.name || 'General',
+        type: firstTopic?.name || 'General',
         status:
           task.status === 'completed'
             ? 'Completed'
@@ -690,16 +730,25 @@ export async function listClientTasksForTutor(clientId: number): Promise<ClientT
 export interface AssignedTask {
   id: number
   clientName: string
-  courseName: string
-  taskType: string
+  name: string
   description: string | null
-  platform: string
   dueTime: string // ISO full datetime
   dueDate: string // derived date part
   status: 'Completed' | 'In Progress' | 'Pending'
   priority: 'high' | 'medium' | 'low'
-  estimatedTime: string
   score: number | null
+  topics: Array<{
+    id: number
+    name: string
+    parent: {
+      id: number
+      name: string
+    } | null
+    subject: {
+      id: number
+      name: string
+    }
+  }>
 }
 
 // Function to get all assigned tasks for current tutor (for task submission page)
@@ -733,8 +782,34 @@ export async function listAssignedTasksForCurrentTutor(): Promise<AssignedTask[]
 
     return tasksResult.docs.map((task) => {
       const client = typeof task.client === 'object' ? task.client : null
-      const topic = typeof task.topic === 'object' ? task.topic : null
-      const subject = topic && typeof topic.subject === 'object' ? topic.subject : null
+
+      // Handle multiple topics
+      const topics = Array.isArray(task.topics)
+        ? task.topics
+            .map((topic) => {
+              if (typeof topic === 'object' && topic) {
+                const subject = typeof topic.subject === 'object' ? topic.subject : null
+                const parent =
+                  typeof topic.parent === 'object' && topic.parent ? topic.parent : null
+                return {
+                  id: topic.id,
+                  name: topic.name || 'Unknown Topic',
+                  parent: parent
+                    ? {
+                        id: parent.id,
+                        name: parent.name || 'Unknown Parent',
+                      }
+                    : null,
+                  subject: {
+                    id: subject?.id || 0,
+                    name: subject?.name || 'Unknown Subject',
+                  },
+                }
+              }
+              return null
+            })
+            .filter((topic): topic is NonNullable<typeof topic> => topic !== null)
+        : []
 
       // Calculate priority based on due date and status
       let priority: 'high' | 'medium' | 'low' = 'medium'
@@ -767,16 +842,14 @@ export async function listAssignedTasksForCurrentTutor(): Promise<AssignedTask[]
       return {
         id: task.id as number,
         clientName: client?.name || 'Unknown Client',
-        courseName: subject?.name || 'Unknown Course',
-        taskType: topic?.name || 'General Task',
+        name: task.name || 'Untitled Task',
         description: task.description || null,
-        platform: 'Remote', // Default platform
         dueTime: dueDateTime,
         dueDate: dueDateTime.split('T')[0],
         status,
         priority,
-        estimatedTime: '2h', // Default estimated time
         score: task.score || null,
+        topics: topics,
       }
     })
   } catch (error) {

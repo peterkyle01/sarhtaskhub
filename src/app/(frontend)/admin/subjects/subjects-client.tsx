@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -24,7 +24,34 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { Plus, BookOpen, FileText, Edit, Trash2, ChevronDown, ChevronRight } from 'lucide-react'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  Plus,
+  BookOpen,
+  FileText,
+  Edit,
+  Trash2,
+  ChevronDown,
+  ChevronRight,
+  Search,
+  MoreHorizontal,
+  Filter,
+  FolderOpen,
+} from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import type { SubjectWithTopics } from '@/server-actions/subjects-actions'
 import type { Topic } from '@/payload-types'
@@ -46,6 +73,8 @@ export function SubjectsClient({ initialSubjects }: SubjectsClientProps) {
   const subjects = initialSubjects
   const [expandedSubjects, setExpandedSubjects] = useState<Set<number>>(new Set())
   const [expandedTopics, setExpandedTopics] = useState<Set<number>>(new Set())
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedSubjectFilter, setSelectedSubjectFilter] = useState<number | null>(null)
 
   // Dialog states
   const [showCreateSubject, setShowCreateSubject] = useState(false)
@@ -65,9 +94,140 @@ export function SubjectsClient({ initialSubjects }: SubjectsClientProps) {
   const [isCreatingSubject, setIsCreatingSubject] = useState(false)
   const [isCreatingTopic, setIsCreatingTopic] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
+  const [_isDeleting, setIsDeleting] = useState(false)
 
   const [error, setError] = useState('')
+
+  // Filter and search logic
+  const filteredData = useMemo(() => {
+    const allItems: Array<{
+      type: 'subject' | 'topic' | 'subtopic'
+      id: number
+      name: string
+      subjectId: number
+      subjectName: string
+      parentTopicId?: number
+      parentTopicName?: string
+      topicCount?: number
+      subtopicCount?: number
+      isVisible?: boolean
+    }> = []
+
+    subjects.forEach((subject) => {
+      // Add subject
+      if (!selectedSubjectFilter || selectedSubjectFilter === subject.id) {
+        const isSubjectExpanded = expandedSubjects.has(subject.id)
+
+        allItems.push({
+          type: 'subject',
+          id: subject.id,
+          name: subject.name,
+          subjectId: subject.id,
+          subjectName: subject.name,
+          topicCount: subject.topics.length,
+          subtopicCount: subject.topics.reduce((acc, topic) => acc + topic.subtopics.length, 0),
+          isVisible: true,
+        })
+
+        // Only add topics if subject is expanded
+        if (isSubjectExpanded) {
+          subject.topics.forEach((topic) => {
+            const isTopicExpanded = expandedTopics.has(topic.id)
+
+            allItems.push({
+              type: 'topic',
+              id: topic.id,
+              name: topic.name,
+              subjectId: subject.id,
+              subjectName: subject.name,
+              subtopicCount: topic.subtopics.length,
+              isVisible: true,
+            })
+
+            // Only add subtopics if topic is expanded
+            if (isTopicExpanded) {
+              topic.subtopics.forEach((subtopic) => {
+                allItems.push({
+                  type: 'subtopic',
+                  id: subtopic.id,
+                  name: subtopic.name,
+                  subjectId: subject.id,
+                  subjectName: subject.name,
+                  parentTopicId: topic.id,
+                  parentTopicName: topic.name,
+                  isVisible: true,
+                })
+              })
+            }
+          })
+        }
+      }
+    })
+
+    // Filter by search term - if searching, show all matching items regardless of expansion
+    if (searchTerm) {
+      const searchItems: typeof allItems = []
+
+      subjects.forEach((subject) => {
+        if (!selectedSubjectFilter || selectedSubjectFilter === subject.id) {
+          // Check if subject matches
+          const subjectMatches = subject.name.toLowerCase().includes(searchTerm.toLowerCase())
+
+          if (subjectMatches) {
+            searchItems.push({
+              type: 'subject',
+              id: subject.id,
+              name: subject.name,
+              subjectId: subject.id,
+              subjectName: subject.name,
+              topicCount: subject.topics.length,
+              subtopicCount: subject.topics.reduce((acc, topic) => acc + topic.subtopics.length, 0),
+              isVisible: true,
+            })
+          }
+
+          subject.topics.forEach((topic) => {
+            const topicMatches = topic.name.toLowerCase().includes(searchTerm.toLowerCase())
+
+            if (topicMatches) {
+              searchItems.push({
+                type: 'topic',
+                id: topic.id,
+                name: topic.name,
+                subjectId: subject.id,
+                subjectName: subject.name,
+                subtopicCount: topic.subtopics.length,
+                isVisible: true,
+              })
+            }
+
+            topic.subtopics.forEach((subtopic) => {
+              const subtopicMatches =
+                subtopic.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                topic.name.toLowerCase().includes(searchTerm.toLowerCase())
+
+              if (subtopicMatches) {
+                searchItems.push({
+                  type: 'subtopic',
+                  id: subtopic.id,
+                  name: subtopic.name,
+                  subjectId: subject.id,
+                  subjectName: subject.name,
+                  parentTopicId: topic.id,
+                  parentTopicName: topic.name,
+                  isVisible: true,
+                })
+              }
+            })
+          })
+        }
+      })
+
+      return searchItems
+    }
+
+    return allItems.filter((item) => item.isVisible)
+  }, [subjects, searchTerm, selectedSubjectFilter, expandedSubjects, expandedTopics])
 
   const refreshData = () => {
     router.refresh()
@@ -77,6 +237,15 @@ export function SubjectsClient({ initialSubjects }: SubjectsClientProps) {
     const newExpanded = new Set(expandedSubjects)
     if (newExpanded.has(subjectId)) {
       newExpanded.delete(subjectId)
+      // Also collapse all topics when collapsing subject
+      const subject = subjects.find((s) => s.id === subjectId)
+      if (subject) {
+        const newExpandedTopics = new Set(expandedTopics)
+        subject.topics.forEach((topic) => {
+          newExpandedTopics.delete(topic.id)
+        })
+        setExpandedTopics(newExpandedTopics)
+      }
     } else {
       newExpanded.add(subjectId)
     }
@@ -243,299 +412,434 @@ export function SubjectsClient({ initialSubjects }: SubjectsClientProps) {
     setShowCreateTopic(true)
   }
 
+  const getItemIcon = (type: string, hasChildren?: boolean, _isExpanded?: boolean) => {
+    switch (type) {
+      case 'subject':
+        return <BookOpen className="w-4 h-4 text-blue-500" />
+      case 'topic':
+        return hasChildren ? (
+          <FolderOpen className="w-4 h-4 text-green-500" />
+        ) : (
+          <FileText className="w-4 h-4 text-green-500" />
+        )
+      case 'subtopic':
+        return <div className="w-2 h-2 rounded-full bg-muted-foreground/60 ml-1" />
+      default:
+        return null
+    }
+  }
+
+  const getIndentation = (type: string) => {
+    switch (type) {
+      case 'subject':
+        return ''
+      case 'topic':
+        return 'pl-6'
+      case 'subtopic':
+        return 'pl-12'
+      default:
+        return ''
+    }
+  }
+
+  const getExpandButton = (item: {
+    type: 'subject' | 'topic' | 'subtopic'
+    id: number
+    topicCount?: number
+    subtopicCount?: number
+  }) => {
+    if (item.type === 'subject' && (item.topicCount || 0) > 0) {
+      return (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation()
+            toggleSubjectExpansion(item.id)
+          }}
+          className="h-6 w-6 p-0 mr-1"
+        >
+          {expandedSubjects.has(item.id) ? (
+            <ChevronDown className="w-3 h-3" />
+          ) : (
+            <ChevronRight className="w-3 h-3" />
+          )}
+        </Button>
+      )
+    }
+
+    if (item.type === 'topic' && (item.subtopicCount || 0) > 0) {
+      return (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation()
+            toggleTopicExpansion(item.id)
+          }}
+          className="h-6 w-6 p-0 mr-1"
+        >
+          {expandedTopics.has(item.id) ? (
+            <ChevronDown className="w-3 h-3" />
+          ) : (
+            <ChevronRight className="w-3 h-3" />
+          )}
+        </Button>
+      )
+    }
+
+    return <div className="w-6 mr-1" /> // Spacer for alignment
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {error && (
-        <div className="p-4 border border-red-200 bg-red-50 text-red-700 rounded-lg">{error}</div>
+        <div className="p-3 border border-red-200 bg-red-50 text-red-700 rounded-lg text-sm">
+          {error}
+        </div>
       )}
 
-      {/* Header */}
-      <div className="flex justify-between items-center">
+      {/* Compact Header */}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Subjects & Topics</h1>
-          <p className="text-muted-foreground">
-            Manage subjects, topics, and subtopics for the task system
+          <h1 className="text-xl font-bold">Subjects & Topics</h1>
+          <p className="text-sm text-muted-foreground">
+            {subjects.length} subjects • {subjects.reduce((acc, s) => acc + s.topics.length, 0)}{' '}
+            topics • {filteredData.length} items shown
           </p>
         </div>
-        <Dialog open={showCreateSubject} onOpenChange={setShowCreateSubject}>
-          <DialogTrigger asChild>
-            <Button className="flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              Add Subject
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Subject</DialogTitle>
-              <DialogDescription>Add a new subject to organize topics and tasks.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <Input
-                placeholder="Subject name"
-                value={newSubjectName}
-                onChange={(e) => setNewSubjectName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleCreateSubject()}
-              />
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setShowCreateSubject(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleCreateSubject}
-                  disabled={isCreatingSubject || !newSubjectName.trim()}
-                >
-                  {isCreatingSubject ? 'Creating...' : 'Create Subject'}
-                </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              // Expand all subjects
+              const allSubjectIds = new Set(subjects.map((s) => s.id))
+              setExpandedSubjects(allSubjectIds)
+            }}
+          >
+            Expand All
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              // Collapse all
+              setExpandedSubjects(new Set())
+              setExpandedTopics(new Set())
+            }}
+          >
+            Collapse All
+          </Button>
+          <Dialog open={showCreateSubject} onOpenChange={setShowCreateSubject}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus className="w-4 h-4 mr-1" />
+                Subject
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Subject</DialogTitle>
+                <DialogDescription>
+                  Add a new subject to organize topics and tasks.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <Input
+                  placeholder="Subject name"
+                  value={newSubjectName}
+                  onChange={(e) => setNewSubjectName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCreateSubject()}
+                />
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setShowCreateSubject(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleCreateSubject}
+                    disabled={isCreatingSubject || !newSubjectName.trim()}
+                  >
+                    {isCreatingSubject ? 'Creating...' : 'Create Subject'}
+                  </Button>
+                </div>
               </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
-      {/* Subjects List */}
-      <div className="space-y-4">
-        {subjects.map((subject) => (
-          <Card key={subject.id} className="overflow-hidden">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleSubjectExpansion(subject.id)}
-                    className="h-8 w-8 p-0"
+      {/* Compact Filters */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search subjects, topics, or subtopics..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 h-9"
+              />
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-9">
+                  <Filter className="w-4 h-4 mr-1" />
+                  {selectedSubjectFilter
+                    ? subjects.find((s) => s.id === selectedSubjectFilter)?.name
+                    : 'All Subjects'}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => setSelectedSubjectFilter(null)}>
+                  All Subjects
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {subjects.map((subject) => (
+                  <DropdownMenuItem
+                    key={subject.id}
+                    onClick={() => setSelectedSubjectFilter(subject.id)}
                   >
-                    {expandedSubjects.has(subject.id) ? (
-                      <ChevronDown className="w-4 h-4" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4" />
-                    )}
-                  </Button>
-                  <BookOpen className="w-5 h-5 text-blue-500" />
-                  <div>
-                    <CardTitle className="text-lg">{subject.name}</CardTitle>
-                    <CardDescription>
-                      {subject.topics.length} topics,{' '}
-                      {subject.topics.reduce((acc, topic) => acc + topic.subtopics.length, 0)}{' '}
-                      subtopics
-                    </CardDescription>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openCreateTopic(subject.id)}
-                    className="flex items-center gap-1"
-                  >
-                    <Plus className="w-3 h-3" />
-                    Add Topic
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => openEditSubject(subject)}>
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Subject</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete &ldquo;{subject.name}&rdquo;? This action
-                          cannot be undone. All topics and subtopics under this subject will also be
-                          deleted.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => handleDeleteSubject(subject.id)}
-                          className="bg-red-600 hover:bg-red-700"
-                          disabled={isDeleting}
-                        >
-                          {isDeleting ? 'Deleting...' : 'Delete'}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </div>
-            </CardHeader>
+                    {subject.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </CardHeader>
 
-            {expandedSubjects.has(subject.id) && (
-              <CardContent className="pt-0">
-                {subject.topics.length === 0 ? (
-                  <div className="text-center py-6 text-muted-foreground">
-                    <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                    <p>No topics yet</p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openCreateTopic(subject.id)}
-                      className="mt-2"
-                    >
-                      Add First Topic
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {subject.topics.map((topic) => (
-                      <div key={topic.id} className="border rounded-lg p-4 bg-muted/20">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            {topic.subtopics.length > 0 && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => toggleTopicExpansion(topic.id)}
-                                className="h-6 w-6 p-0"
-                              >
-                                {expandedTopics.has(topic.id) ? (
-                                  <ChevronDown className="w-3 h-3" />
-                                ) : (
-                                  <ChevronRight className="w-3 h-3" />
-                                )}
-                              </Button>
-                            )}
-                            <FileText className="w-4 h-4 text-green-500" />
-                            <span className="font-medium">{topic.name}</span>
-                            {topic.subtopics.length > 0 && (
-                              <Badge variant="secondary" className="text-xs">
-                                {topic.subtopics.length} subtopics
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => openCreateTopic(subject.id, topic.id)}
-                              className="h-7 w-7 p-0"
-                            >
-                              <Plus className="w-3 h-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => openEditTopic(topic)}
-                              className="h-7 w-7 p-0"
-                            >
-                              <Edit className="w-3 h-3" />
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-7 w-7 p-0 text-red-600 hover:text-red-700"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Topic</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to delete &ldquo;{topic.name}&rdquo;? This
-                                    will also delete all subtopics.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => handleDeleteTopic(topic.id)}
-                                    className="bg-red-600 hover:bg-red-700"
-                                  >
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
-                        </div>
-
-                        {expandedTopics.has(topic.id) && topic.subtopics.length > 0 && (
-                          <div className="ml-6 space-y-2 border-l-2 border-muted pl-4">
-                            {topic.subtopics.map((subtopic) => (
-                              <div
-                                key={subtopic.id}
-                                className="flex items-center justify-between py-1"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <div className="w-2 h-2 rounded-full bg-muted-foreground/40" />
-                                  <span className="text-sm">{subtopic.name}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => openEditTopic(subtopic)}
-                                    className="h-6 w-6 p-0"
-                                  >
-                                    <Edit className="w-3 h-3" />
-                                  </Button>
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
-                                      >
-                                        <Trash2 className="w-3 h-3" />
-                                      </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>Delete Subtopic</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          Are you sure you want to delete &ldquo;{subtopic.name}
-                                          &rdquo;?
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction
-                                          onClick={() => handleDeleteTopic(subtopic.id)}
-                                          className="bg-red-600 hover:bg-red-700"
-                                        >
-                                          Delete
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+        <CardContent className="p-0">
+          {filteredData.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p className="mb-2">
+                {searchTerm ? 'No items match your search' : 'No subjects yet'}
+              </p>
+              {!searchTerm && (
+                <Button size="sm" onClick={() => setShowCreateSubject(true)}>
+                  Create First Subject
+                </Button>
+              )}
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b">
+                  <TableHead className="w-[50%] font-medium">Name</TableHead>
+                  <TableHead className="font-medium">Type</TableHead>
+                  <TableHead className="font-medium">Subject</TableHead>
+                  <TableHead className="font-medium">Count</TableHead>
+                  <TableHead className="w-[100px] font-medium">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredData.map((item) => (
+                  <TableRow key={`${item.type}-${item.id}`} className="hover:bg-muted/20">
+                    <TableCell className={`${getIndentation(item.type)} py-2`}>
+                      <div className="flex items-center gap-1">
+                        {getExpandButton(item)}
+                        {getItemIcon(
+                          item.type,
+                          item.type === 'topic' && (item.subtopicCount || 0) > 0,
+                        )}
+                        <span className="font-medium text-sm">{item.name}</span>
+                        {item.type === 'subtopic' && item.parentTopicName && (
+                          <Badge variant="outline" className="text-xs">
+                            {item.parentTopicName}
+                          </Badge>
                         )}
                       </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            )}
-          </Card>
-        ))}
-
-        {subjects.length === 0 && (
-          <Card>
-            <CardContent className="text-center py-12">
-              <BookOpen className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-              <h3 className="text-lg font-semibold mb-2">No subjects yet</h3>
-              <p className="text-muted-foreground mb-4">
-                Get started by creating your first subject
-              </p>
-              <Button onClick={() => setShowCreateSubject(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Create First Subject
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+                    </TableCell>
+                    <TableCell className="py-2">
+                      <Badge
+                        variant={
+                          item.type === 'subject'
+                            ? 'default'
+                            : item.type === 'topic'
+                              ? 'secondary'
+                              : 'outline'
+                        }
+                        className="text-xs"
+                      >
+                        {item.type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="py-2 text-sm text-muted-foreground">
+                      {item.type !== 'subject' ? item.subjectName : '-'}
+                    </TableCell>
+                    <TableCell className="py-2 text-sm">
+                      {item.type === 'subject' && (
+                        <span className="text-muted-foreground">
+                          {item.topicCount}T, {item.subtopicCount}ST
+                        </span>
+                      )}
+                      {item.type === 'topic' && (
+                        <span className="text-muted-foreground">
+                          {item.subtopicCount} subtopics
+                        </span>
+                      )}
+                      {item.type === 'subtopic' && <span className="text-muted-foreground">-</span>}
+                    </TableCell>
+                    <TableCell className="py-2">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {item.type === 'subject' && (
+                            <>
+                              <DropdownMenuItem onClick={() => openCreateTopic(item.id)}>
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add Topic
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  const subject = subjects.find((s) => s.id === item.id)
+                                  if (subject) openEditSubject(subject)
+                                }}
+                              >
+                                <Edit className="w-4 h-4 mr-2" />
+                                Edit Subject
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem
+                                    onSelect={(e) => e.preventDefault()}
+                                    className="text-red-600"
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete Subject
+                                  </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Subject</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Delete &quot;{item.name}&quot; and all its topics/subtopics?
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDeleteSubject(item.id)}
+                                      className="bg-red-600 hover:bg-red-700"
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </>
+                          )}
+                          {item.type === 'topic' && (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() => openCreateTopic(item.subjectId, item.id)}
+                              >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add Subtopic
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  const subject = subjects.find((s) => s.id === item.subjectId)
+                                  const topic = subject?.topics.find((t) => t.id === item.id)
+                                  if (topic) openEditTopic(topic)
+                                }}
+                              >
+                                <Edit className="w-4 h-4 mr-2" />
+                                Edit Topic
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem
+                                    onSelect={(e) => e.preventDefault()}
+                                    className="text-red-600"
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete Topic
+                                  </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Topic</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Delete &quot;{item.name}&quot; and all its subtopics?
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDeleteTopic(item.id)}
+                                      className="bg-red-600 hover:bg-red-700"
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </>
+                          )}
+                          {item.type === 'subtopic' && (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  const subject = subjects.find((s) => s.id === item.subjectId)
+                                  const topic = subject?.topics.find(
+                                    (t) => t.id === item.parentTopicId,
+                                  )
+                                  const subtopic = topic?.subtopics.find((st) => st.id === item.id)
+                                  if (subtopic) openEditTopic(subtopic)
+                                }}
+                              >
+                                <Edit className="w-4 h-4 mr-2" />
+                                Edit Subtopic
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem
+                                    onSelect={(e) => e.preventDefault()}
+                                    className="text-red-600"
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete Subtopic
+                                  </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Subtopic</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Delete &quot;{item.name}&quot;?
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDeleteTopic(item.id)}
+                                      className="bg-red-600 hover:bg-red-700"
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Create Topic Dialog */}
       <Dialog open={showCreateTopic} onOpenChange={setShowCreateTopic}>
